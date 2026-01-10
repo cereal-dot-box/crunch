@@ -1,0 +1,97 @@
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: crunch-caddy
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    restart: unless-stopped
+    networks:
+      - crunch-network
+    healthcheck:
+      test: ["CMD", "caddy", "version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    container_name: crunch-redis
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+    restart: unless-stopped
+    networks:
+      - crunch-network
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  backend:
+    build: ./backend
+    container_name: crunch-backend
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - NODE_ENV=production
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - crunch-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend
+      target: production
+    container_name: crunch-frontend
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - crunch-network
+
+  worker:
+    build: ./backend
+    container_name: crunch-worker
+    command: ["bun", "run", "workers"]
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - NODE_ENV=production
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - crunch-network
+
+volumes:
+  redis-data:
+  caddy-data:
+  caddy-config:
+
+networks:
+  crunch-network:
+    driver: bridge

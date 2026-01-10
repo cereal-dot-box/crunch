@@ -1,0 +1,7 @@
+[install]
+# Faster installs
+frozenLockfile = false
+
+[run]
+# Hot reload during development
+watch = true

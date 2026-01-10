@@ -1,0 +1,180 @@
+type Account {
+  id: Int!
+  name: String!
+  bank: String
+  type: String
+  mask: String
+  current_balance: Float
+  available_balance: Float
+  iso_currency_code: String!
+  is_active: Boolean!
+  created_at: String!
+  updated_at: String!
+}
+
+type BudgetBucket {
+  id: Int!
+  bucket_id: String!
+  name: String!
+  monthly_limit: Float!
+  color: String!
+  is_active: Boolean!
+  created_at: String!
+  updated_at: String!
+}
+
+input UpdateBudgetBucketInput {
+  name: String
+  monthly_limit: Float
+  color: String
+}
+
+type MonthlyPeriod {
+  id: Int!
+  user_id: Int!
+  month: String!
+  projected_income: Float!
+  actual_income: Float!
+  status: String!
+  notes: String
+  created_at: String!
+  updated_at: String!
+  is_open: Boolean!
+  is_closed: Boolean!
+}
+
+input CreateMonthlyPeriodInput {
+  month: String!
+  projected_income: Float!
+  notes: String
+}
+
+input UpdateMonthlyPeriodInput {
+  projected_income: Float
+  actual_income: Float
+  status: String
+  notes: String
+}
+
+type Transaction {
+  id: Int!
+  transaction_id: String!
+  account_id: Int!
+  amount: Float!
+  iso_currency_code: String!
+  date: String!
+  authorized_date: String
+  name: String!
+  merchant_name: String
+  pending: Boolean!
+  payment_channel: String
+  created_at: String!
+  updated_at: String!
+}
+
+type TransactionListResponse {
+  transactions: [Transaction!]!
+  total: Int!
+}
+
+enum SyncSourceType {
+  balance
+  transactions
+}
+
+type SyncSource {
+  id: Int!
+  account_id: Int!
+  name: String!
+  type: SyncSourceType!
+  email_address: String!
+  imap_host: String!
+  imap_port: Int!
+  imap_folder: String!
+  status: String!
+  last_synced_at: String
+  last_processed_uid: String
+  is_active: Boolean!
+  created_at: String!
+  balance_count: Int
+  transaction_count: Int
+}
+
+type TestConnectionResult {
+  success: Boolean!
+  error_message: String
+}
+
+type SyncResult {
+  timestamp: String!
+  emails_fetched: Int!
+  jobs_enqueued: Int!
+  errors: Int!
+  duration: Int!
+}
+
+type AvailableBankType {
+  bank: String!
+  types: [String!]!
+}
+
+input AddAccountInput {
+  name: String!
+  bank: String!
+  type: String!
+  mask: String!
+  iso_currency_code: String!
+}
+
+input AddSyncSourceInput {
+  account_id: Int!
+  name: String!
+  type: SyncSourceType!
+  email_address: String!
+  imap_host: String!
+  imap_port: Int!
+  imap_password: String!
+  imap_folder: String
+}
+
+input UpdateSyncSourceInput {
+  name: String
+  type: SyncSourceType
+  email_address: String
+  imap_host: String
+  imap_port: Int
+  imap_password: String
+  imap_folder: String
+}
+
+type Query {
+  accounts: [Account!]!
+  budget_buckets: [BudgetBucket!]!
+  budget_bucket(bucket_id: String!): BudgetBucket
+  monthly_periods: [MonthlyPeriod!]!
+  monthly_period(month: String!): MonthlyPeriod
+  current_monthly_period: MonthlyPeriod
+  transactions_by_account(account_id: Int!, limit: Int, offset: Int): TransactionListResponse!
+  transactions(limit: Int, offset: Int): TransactionListResponse!
+  transaction(id: Int!): Transaction
+  sync_sources: [SyncSource!]!
+  sync_sources_by_account(account_id: Int!): [SyncSource!]!
+  sync_source(id: Int!): SyncSource
+  available_bank_types: [AvailableBankType!]!
+}
+
+type Mutation {
+  add_account(input: AddAccountInput!): Account!
+  add_sync_source(input: AddSyncSourceInput!): SyncSource!
+  update_sync_source(id: Int!, input: UpdateSyncSourceInput!): SyncSource!
+  sync_accounts: Boolean!
+  deactivate_account(account_id: Int!): Boolean!
+  update_budget_bucket(bucket_id: String!, input: UpdateBudgetBucketInput!): BudgetBucket!
+  create_monthly_period(input: CreateMonthlyPeriodInput!): MonthlyPeriod!
+  update_monthly_period(id: Int!, input: UpdateMonthlyPeriodInput!): MonthlyPeriod!
+  close_monthly_period(id: Int!): MonthlyPeriod!
+  delete_monthly_period(id: Int!): Boolean!
+  delete_sync_source(id: Int!): Boolean!
+  test_sync_source_connection(id: Int!): TestConnectionResult!
+  sync_sync_source(id: Int!): SyncResult!
+}
