@@ -8,16 +8,16 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root.tsx'
-import { Route as SetupRouteImport } from './routes/setup.tsx'
-import { Route as RegisterRouteImport } from './routes/register.tsx'
-import { Route as LoginRouteImport } from './routes/login.tsx'
-import { Route as ProtectedRouteImport } from './routes/_protected.tsx'
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as SetupRouteImport } from './routes/setup'
+import { Route as RegisterRouteImport } from './routes/register'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as ProtectedRouteImport } from './routes/_protected'
 import { Route as ProtectedIndexRouteImport } from './routes/_protected/index'
-import { Route as ProtectedMonthlyRouteImport } from './routes/_protected/monthly.tsx'
-import { Route as ProtectedAccountsRouteImport } from './routes/_protected/accounts.tsx'
-import { Route as ProtectedBucketBucketIdRouteImport } from './routes/_protected/bucket/$bucketId.tsx'
-import { Route as ProtectedAccountAccountIdRouteImport } from './routes/_protected/account/$accountId.tsx'
+import { Route as ProtectedMonthlyRouteImport } from './routes/_protected/monthly'
+import { Route as ProtectedAccountsRouteImport } from './routes/_protected/accounts'
+import { Route as ProtectedBucketBucketIdRouteImport } from './routes/_protected/bucket/$bucketId'
+import { Route as ProtectedAccountAccountIdRouteImport } from './routes/_protected/account/$accountId'
 
 const SetupRoute = SetupRouteImport.update({
   id: '/setup',

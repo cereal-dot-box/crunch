@@ -1,20 +1,17 @@
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { checkStatus, register as registerFn } from '../server/auth'
+import { register as registerFn } from '../server/auth'
 import { Input, Button } from '../components/ui'
 
 export const Route = createFileRoute('/setup')({
-  beforeLoad: async () => {
-    try {
-      const { isSetup, isAuthenticated } = await checkStatus()
-      if (isSetup && isAuthenticated) {
-        throw redirect({ to: '/' })
-      }
-      if (isSetup && !isAuthenticated) {
-        throw redirect({ to: '/login' })
-      }
-    } catch (error) {
-      if (error instanceof Response) throw error
+  beforeLoad: async ({ context }) => {
+    // Use cached auth from root context (already fetched by __root.tsx)
+    const { isSetup, isAuthenticated } = context.auth || {}
+    if (isSetup && isAuthenticated) {
+      throw redirect({ to: '/' })
+    }
+    if (isSetup && !isAuthenticated) {
+      throw redirect({ to: '/login' })
     }
   },
   component: SetupPage,

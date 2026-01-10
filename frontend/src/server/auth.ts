@@ -39,7 +39,7 @@ function forwardCookies(response: Response) {
   }
 }
 
-interface CheckStatusResponse {
+export interface CheckStatusResponse {
   isSetup: boolean
   isAuthenticated: boolean
 }

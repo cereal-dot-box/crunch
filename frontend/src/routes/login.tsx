@@ -1,17 +1,13 @@
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { checkStatus, login as loginFn } from '../server/auth'
+import { login as loginFn } from '../server/auth'
 import { Input, Button } from '../components/ui'
 
 export const Route = createFileRoute('/login')({
-  beforeLoad: async () => {
-    try {
-      const { isAuthenticated } = await checkStatus()
-      if (isAuthenticated) {
-        throw redirect({ to: '/' })
-      }
-    } catch (error) {
-      if (error instanceof Response) throw error
+  beforeLoad: async ({ context }) => {
+    // Use cached auth from root context (already fetched by __root.tsx)
+    if (context.auth?.isAuthenticated) {
+      throw redirect({ to: '/' })
     }
   },
   component: LoginPage,
