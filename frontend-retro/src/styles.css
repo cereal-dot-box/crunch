@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+/* Fix iOS PWA navigation issue */
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+@layer base {
+  :root {
+    /* Retro Web 1.0 Color Palette */
+    --color-text: #000000;
+    --color-bg: #ffffff;
+    --color-link: #0000EE;
+    --color-link-visited: #551A8B;
+    --color-link-hover: #000000;
+    --color-border: #000000;
+    --color-border-light: #808080;
+    --color-accent: #10b981; /* emerald for Crunch branding */
+
+    /* Touch Target Sizes - iOS HIG: 44x44pt, Material: 48x48dp */
+    --touch-target-min: 44px;
+    --touch-target-comfortable: 48px;
+
+    /* Mobile-optimized spacing scale */
+    --spacing-mobile-xs: 0.5rem;  /* 8px */
+    --spacing-mobile-sm: 0.75rem; /* 12px */
+    --spacing-mobile-md: 1rem;    /* 16px */
+    --spacing-mobile-lg: 1.5rem;  /* 24px */
+    --spacing-mobile-xl: 2rem;    /* 32px */
+
+    /* Mobile typography - base font size 20px like personal-site */
+    --text-mobile-xs: 0.75rem;    /* 12px */
+    --text-mobile-sm: 0.875rem;   /* 14px */
+    --text-mobile-base: 1rem;     /* 16px */
+    --text-mobile-lg: 1.125rem;   /* 18px */
+    --text-mobile-xl: 1.25rem;    /* 20px */
+
+    /* Mobile-specific z-index layers */
+    --z-bottom-nav: 50;
+    --z-modal: 100;
+    --z-toast: 200;
+  }
+
+  body {
+    margin: 0;
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 20px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  a {
+    color: var(--color-link);
+  }
+
+  a:visited {
+    color: var(--color-link-visited);
+  }
+
+  a:hover {
+    color: var(--color-link-hover);
+  }
+
+  code {
+    font-family: 'Courier New', Courier, monospace;
+  }
+}
