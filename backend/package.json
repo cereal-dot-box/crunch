@@ -22,6 +22,7 @@
     "graphql": "^16.12.0",
     "imap": "^0.8.19",
     "ioredis": "^5.8.2",
+    "jose": "^6.1.3",
     "kysely": "^0.28.9",
     "mailparser": "^3.9.1",
     "mercurius": "^16.6.0",

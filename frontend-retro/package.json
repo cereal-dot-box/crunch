@@ -23,6 +23,7 @@
     "@tanstack/router-plugin": "^1.132.0",
     "@tanstack/zod-adapter": "^1.146.2",
     "axios": "^1.13.2",
+    "better-auth": "^1.4.10",
     "date-fns": "^4.1.0",
     "nitro": "latest",
     "react": "^19.2.0",

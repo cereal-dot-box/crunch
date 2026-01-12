@@ -10,7 +10,8 @@ import { ImapService } from '../services/email/imap.service';
 import { getEmailParserService } from '../services/email/parser.service';
 
 interface Context extends MercuriusContext {
-  userId?: number;
+  isAuthenticated: boolean;
+  serviceClient?: string;
 }
 
 interface UpdateBudgetBucketInput {
@@ -63,15 +64,15 @@ interface UpdateMonthlyPeriodInput {
 
 export const resolvers = {
   Query: {
-    accounts: async (_parent: any, _args: any, context: Context) => {
-      if (!context.userId) throw new Error('Unauthorized');
-      const accounts = await Account.getByUserId(context.userId);
+    accounts: async (_parent: any, { userId }: { userId: string }, context: Context) => {
+      if (!context.isAuthenticated) throw new Error('Unauthorized');
+      const accounts = await Account.getByUserId(userId);
 
       // Fetch balances for each account
       const accountsWithBalances = await Promise.all(
         accounts.map(async (account) => {
-          const availableBalance = await BalanceUpdate.getCurrent(account.id, context.userId!, 'available_balance');
-          const currentBalance = await BalanceUpdate.getCurrent(account.id, context.userId!, 'current_balance');
+          const availableBalance = await BalanceUpdate.getCurrent(account.id, userId, 'available_balance');
+          const currentBalance = await BalanceUpdate.getCurrent(account.id, userId, 'current_balance');
 
           return {
             ...account.toJSON(),
@@ -84,20 +85,20 @@ export const resolvers = {
       return accountsWithBalances;
     },
 
-    budget_buckets: async (_parent: any, _args: any, context: Context) => {
-      if (!context.userId) throw new Error('Unauthorized');
-      const buckets = await BudgetBucket.getByUserId(context.userId);
+    budget_buckets: async (_parent: any, { userId }: { userId: string }, context: Context) => {
+      if (!context.isAuthenticated) throw new Error('Unauthorized');
+      const buckets = await BudgetBucket.getByUserId(userId);
 
       return buckets.map((bucket) => bucket.toJSON());
     },
 
     budget_bucket: async (
       _parent: any,
-      { bucket_id }: { bucket_id: string },
+      { userId, bucket_id }: { userId: string; bucket_id: string },
       context: Context
     ) => {
-      if (!context.userId) throw new Error('Unauthorized');
-      const bucket = await BudgetBucket.get(context.userId, bucket_id);
+      if (!context.isAuthenticated) throw new Error('Unauthorized');
+      const bucket = await BudgetBucket.get(userId, bucket_id);
 
       if (!bucket) {
         throw new Error('Budget bucket not found');
@@ -106,19 +107,19 @@ export const resolvers = {
       return bucket.toJSON();
     },
 
-    monthly_periods: async (_parent: any, _args: any, context: Context) => {
-      if (!context.userId) throw new Error('Unauthorized');
-      const periods = await MonthlyPeriod.getByUserId(context.userId);
+    monthly_periods: async (_parent: any, { userId }: { userId: string }, context: Context) => {
+      if (!context.isAuthenticated) throw new Error('Unauthorized');
+      const periods = await MonthlyPeriod.getByUserId(userId);
       return periods.map((period) => period.toJSON());
     },
 
     monthly_period: async (
       _parent: any,
-      { month }: { month: string },
+      { userId, month }: { userId: string; month: string },
       context: Context
     ) => {
-      if (!context.userId) throw new Error('Unauthorized');
-      const period = await MonthlyPeriod.getByMonth(context.userId, month);
+      if (!context.isAuthenticated) throw new Error('Unauthorized');
+      const period = await MonthlyPeriod.getByMonth(userId, month);
 
       if (!period) {
         throw new Error('Monthly period not found');
@@ -127,27 +128,27 @@ export const resolvers = {
       return period.toJSON();
     },
 
-    current_monthly_period: async (_parent: any, _args: any, context: Context) => {
-      if (!context.userId) throw new Error('Unauthorized');
-      const period = await MonthlyPeriod.getOpen(context.userId);
+    current_monthly_period: async (_parent: any, { userId }: { userId: string }, context: Context) => {
+      if (!context.isAuthenticated) throw new Error('Unauthorized');
+      const period = await MonthlyPeriod.getOpen(userId);
       return period ? period.toJSON() : null;
     },
 
     transactions_by_account: async (
       _parent: any,
-      { account_id, limit, offset }: { account_id: number; limit?: number; offset?: number },
+      { userId, account_id, limit, offset }: { userId: string; account_id: number; limit?: number; offset?: number },
       context: Context
     ) => {
-      if (!context.userId) throw new Error('Unauthorized');
+      if (!context.isAuthenticated) throw new Error('Unauthorized');
 
       const transactions = await Transaction.getByAccountId(
         account_id,
-        context.userId,
+        userId,
         limit || 50,
         offset || 0
       );
 
-      const count = await Transaction.getCountByAccountId(account_id, context.userId);
+      const count = await Transaction.getCountByAccountId(account_id, userId);
 
       return {
         transactions: transactions.map((tx) => tx.toJSON()),
@@ -157,19 +158,19 @@ export const resolvers = {
 
     transactions: async (
       _parent: any,
-      { limit, offset }: { limit?: number; offset?: number },
+      { userId, limit, offset }: { userId: string; limit?: number; offset?: number },
       context: Context
     ) => {
-      if (!context.userId) throw new Error('Unauthorized');
+      if (!context.isAuthenticated) throw new Error('Unauthorized');
 
       // Get transactions for the user
       const transactions = await Transaction.getByUserId(
-        context.userId,
+        userId,
         limit || 50,
         offset || 0
       );
 
-      const count = await Transaction.getCountByUserId(context.userId);
+      const count = await Transaction.getCountByUserId(userId);
 
       return {
         transactions: transactions.map((tx) => tx.toJSON()),
@@ -177,9 +178,20 @@ export const resolvers = {
       };
     },
 
-    sync_sources: async (_parent: any, _args: any, context: Context) => {
-      if (!context.userId) throw new Error('Unauthorized');
-      const sources = await SyncSource.getByUserId(context.userId);
+    transaction: async (
+      _parent: any,
+      { userId, id }: { userId: string; id: number },
+      context: Context
+    ) => {
+      if (!context.isAuthenticated) throw new Error('Unauthorized');
+      const tx = await Transaction.getById(id, userId);
+      if (!tx) throw new Error('Transaction not found');
+      return tx.toJSON();
+    },
+
+    sync_sources: async (_parent: any, { userId }: { userId: string }, context: Context) => {
+      if (!context.isAuthenticated) throw new Error('Unauthorized');
+      const sources = await SyncSource.getByUserId(userId);
 
       // Get stats for each source
       return Promise.all(
@@ -197,10 +209,10 @@ export const resolvers = {
 
     sync_sources_by_account: async (
       _parent: any,
-      { account_id }: { account_id: number },
+      { userId, account_id }: { userId: string; account_id: number },
       context: Context
     ) => {
-      if (!context.userId) throw new Error('Unauthorized');
+      if (!context.isAuthenticated) throw new Error('Unauthorized');
       const sources = await SyncSource.getByAccountId(account_id);
 
       // Get stats for each source
@@ -219,11 +231,11 @@ export const resolvers = {
 
     sync_source: async (
       _parent: any,
-      { id }: { id: number },
+      { userId, id }: { userId: string; id: number },
       context: Context
     ) => {
-      if (!context.userId) throw new Error('Unauthorized');
-      const source = await SyncSource.getById(id, context.userId);
+      if (!context.isAuthenticated) throw new Error('Unauthorized');
+      const source = await SyncSource.getById(id, userId);
       if (!source) throw new Error('Sync source not found');
 
       const stats = await SyncSource.getWithStats(id);
@@ -244,10 +256,10 @@ export const resolvers = {
   Mutation: {
     add_account: async (
       _parent: any,
-      { input }: { input: AddAccountInput },
+      { userId, input }: { userId: string; input: AddAccountInput },
       context: Context
     ) => {
-      if (!context.userId) throw new Error('Unauthorized');
+      if (!context.isAuthenticated) throw new Error('Unauthorized');
 
       // Validation
       if (!input.name || input.name.length < 1) {
@@ -271,7 +283,7 @@ export const resolvers = {
       }
 
       const account = await Account.create({
-        userId: context.userId,
+        userId,
         name: input.name,
         bank: input.bank,
         type: input.type,
@@ -288,10 +300,10 @@ export const resolvers = {
 
     add_sync_source: async (
       _parent: any,
-      { input }: { input: AddSyncSourceInput },
+      { userId, input }: { userId: string; input: AddSyncSourceInput },
       context: Context
     ) => {
-      if (!context.userId) throw new Error('Unauthorized');
+      if (!context.isAuthenticated) throw new Error('Unauthorized');
 
       // Validation
       if (!input.name || input.name.length < 1) {
@@ -319,7 +331,7 @@ export const resolvers = {
       }
 
       // Verify the account exists and belongs to the user
-      const accounts = await Account.getByUserId(context.userId);
+      const accounts = await Account.getByUserId(userId);
       const account = accounts.find((a) => a.id === input.account_id);
       if (!account) {
         throw new Error('Account not found');
@@ -347,13 +359,13 @@ export const resolvers = {
 
     update_sync_source: async (
       _parent: any,
-      { id, input }: { id: number; input: UpdateSyncSourceInput },
+      { userId, id, input }: { userId: string; id: number; input: UpdateSyncSourceInput },
       context: Context
     ) => {
-      if (!context.userId) throw new Error('Unauthorized');
+      if (!context.isAuthenticated) throw new Error('Unauthorized');
 
       // Verify the sync source exists and belongs to the user
-      const existing = await SyncSource.getById(id, context.userId);
+      const existing = await SyncSource.getById(id, userId);
       if (!existing) {
         throw new Error('Sync source not found');
       }
@@ -367,7 +379,7 @@ export const resolvers = {
         throw new Error('Valid IMAP port is required (1-65535)');
       }
 
-      const updated = await SyncSource.update(id, context.userId, {
+      const updated = await SyncSource.update(id, userId, {
         name: input.name ?? undefined,
         type: input.type ?? undefined,
         emailAddress: input.email_address ?? undefined,
@@ -389,18 +401,18 @@ export const resolvers = {
       };
     },
 
-    sync_accounts: async (_parent: any, _args: any, context: Context) => {
-      if (!context.userId) throw new Error('Unauthorized');
+    sync_accounts: async (_parent: any, { userId }: { userId: string }, context: Context) => {
+      if (!context.isAuthenticated) throw new Error('Unauthorized');
 
       const syncService = new EmailSyncService();
 
       // Get all active sync sources for this user
-      const syncSources = await SyncSource.getActiveByUserId(context.userId);
+      const syncSources = await SyncSource.getActiveByUserId(userId);
 
       // Sync each sync source
       for (const source of syncSources) {
         try {
-          await syncService.syncSyncSource(source.id, context.userId);
+          await syncService.syncSyncSource(source.id, userId);
         } catch (error) {
           console.error(`Failed to sync sync source ${source.id}:`, error);
           // Continue with other sources even if one fails
@@ -412,26 +424,28 @@ export const resolvers = {
 
     deactivate_account: async (
       _parent: any,
-      { account_id }: { account_id: number },
+      { userId, account_id }: { userId: string; account_id: number },
       context: Context
     ) => {
-      if (!context.userId) throw new Error('Unauthorized');
-      await Account.deactivate(account_id, context.userId);
+      if (!context.isAuthenticated) throw new Error('Unauthorized');
+      await Account.deactivate(account_id, userId);
       return true;
     },
 
     update_budget_bucket: async (
       _parent: any,
       {
+        userId,
         bucket_id,
         input,
       }: {
+        userId: string;
         bucket_id: string;
         input: UpdateBudgetBucketInput;
       },
       context: Context
     ) => {
-      if (!context.userId) throw new Error('Unauthorized');
+      if (!context.isAuthenticated) throw new Error('Unauthorized');
 
       // Validation
       if (input.name !== undefined) {
@@ -454,7 +468,7 @@ export const resolvers = {
         }
       }
 
-      const updated = await BudgetBucket.update(context.userId, bucket_id, input);
+      const updated = await BudgetBucket.update(userId, bucket_id, input);
 
       if (!updated) {
         throw new Error('Budget bucket not found');
@@ -465,10 +479,10 @@ export const resolvers = {
 
     create_monthly_period: async (
       _parent: any,
-      { input }: { input: CreateMonthlyPeriodInput },
+      { userId, input }: { userId: string; input: CreateMonthlyPeriodInput },
       context: Context
     ) => {
-      if (!context.userId) throw new Error('Unauthorized');
+      if (!context.isAuthenticated) throw new Error('Unauthorized');
 
       // Validation
       if (!input.month || !input.month.match(/^\d{4}-(0[1-9]|1[0-2])$/)) {
@@ -480,13 +494,13 @@ export const resolvers = {
       }
 
       // Check if period already exists
-      const existing = await MonthlyPeriod.getByMonth(context.userId, input.month);
+      const existing = await MonthlyPeriod.getByMonth(userId, input.month);
       if (existing) {
         throw new Error('Monthly period for this month already exists');
       }
 
       const period = await MonthlyPeriod.create({
-        userId: context.userId,
+        userId,
         month: input.month,
         projectedIncome: input.projected_income,
         notes: input.notes ?? null,
@@ -497,13 +511,13 @@ export const resolvers = {
 
     update_monthly_period: async (
       _parent: any,
-      { id, input }: { id: number; input: UpdateMonthlyPeriodInput },
+      { userId, id, input }: { userId: string; id: number; input: UpdateMonthlyPeriodInput },
       context: Context
     ) => {
-      if (!context.userId) throw new Error('Unauthorized');
+      if (!context.isAuthenticated) throw new Error('Unauthorized');
 
       // Get existing period to check status
-      const existing = await MonthlyPeriod.getById(id, context.userId);
+      const existing = await MonthlyPeriod.getById(id, userId);
       if (!existing) {
         throw new Error('Monthly period not found');
       }
@@ -528,7 +542,7 @@ export const resolvers = {
         throw new Error('Status must be either "open" or "closed"');
       }
 
-      const updated = await MonthlyPeriod.update(id, context.userId, {
+      const updated = await MonthlyPeriod.update(id, userId, {
         projectedIncome: input.projected_income ?? undefined,
         actualIncome: input.actual_income ?? undefined,
         status: input.status ?? undefined,
@@ -544,12 +558,12 @@ export const resolvers = {
 
     close_monthly_period: async (
       _parent: any,
-      { id }: { id: number },
+      { userId, id }: { userId: string; id: number },
       context: Context
     ) => {
-      if (!context.userId) throw new Error('Unauthorized');
+      if (!context.isAuthenticated) throw new Error('Unauthorized');
 
-      const existing = await MonthlyPeriod.getById(id, context.userId);
+      const existing = await MonthlyPeriod.getById(id, userId);
       if (!existing) {
         throw new Error('Monthly period not found');
       }
@@ -558,7 +572,7 @@ export const resolvers = {
         throw new Error('Monthly period is already closed');
       }
 
-      const closed = await MonthlyPeriod.close(id, context.userId);
+      const closed = await MonthlyPeriod.close(id, userId);
 
       if (!closed) {
         throw new Error('Failed to close monthly period');
@@ -569,12 +583,12 @@ export const resolvers = {
 
     delete_monthly_period: async (
       _parent: any,
-      { id }: { id: number },
+      { userId, id }: { userId: string; id: number },
       context: Context
     ) => {
-      if (!context.userId) throw new Error('Unauthorized');
+      if (!context.isAuthenticated) throw new Error('Unauthorized');
 
-      const existing = await MonthlyPeriod.getById(id, context.userId);
+      const existing = await MonthlyPeriod.getById(id, userId);
       if (!existing) {
         throw new Error('Monthly period not found');
       }
@@ -584,31 +598,31 @@ export const resolvers = {
         throw new Error('Cannot delete a closed monthly period');
       }
 
-      await MonthlyPeriod.delete(id, context.userId);
+      await MonthlyPeriod.delete(id, userId);
       return true;
     },
 
     delete_sync_source: async (
       _parent: any,
-      { id }: { id: number },
+      { userId, id }: { userId: string; id: number },
       context: Context
     ) => {
-      if (!context.userId) throw new Error('Unauthorized');
+      if (!context.isAuthenticated) throw new Error('Unauthorized');
 
       // Delete the sync source (cascade will handle related data)
-      await SyncSource.delete(id, context.userId);
+      await SyncSource.delete(id, userId);
 
       return true;
     },
 
     test_sync_source_connection: async (
       _parent: any,
-      { id }: { id: number },
+      { userId, id }: { userId: string; id: number },
       context: Context
     ) => {
-      if (!context.userId) throw new Error('Unauthorized');
+      if (!context.isAuthenticated) throw new Error('Unauthorized');
 
-      const source = await SyncSource.getById(id, context.userId);
+      const source = await SyncSource.getById(id, userId);
       if (!source) throw new Error('Sync source not found');
 
       const imapService = new ImapService(source.toJSON());
@@ -630,13 +644,13 @@ export const resolvers = {
 
     sync_sync_source: async (
       _parent: any,
-      { id }: { id: number },
+      { userId, id }: { userId: string; id: number },
       context: Context
     ) => {
-      if (!context.userId) throw new Error('Unauthorized');
+      if (!context.isAuthenticated) throw new Error('Unauthorized');
 
       const syncService = new EmailSyncService();
-      const result = await syncService.syncAndProcessSyncSource(id, context.userId);
+      const result = await syncService.syncAndProcessSyncSource(id, userId);
 
       return {
         timestamp: new Date().toISOString(),

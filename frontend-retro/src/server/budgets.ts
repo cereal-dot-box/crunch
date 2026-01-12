@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
-import { getRequest } from '@tanstack/react-start/server'
 import { z } from 'zod'
 import { zodValidator } from '@tanstack/zod-adapter'
+import { graphqlRequest, getUserIdFromSession } from './graphql'
 
 export interface BudgetBucket {
   id: number
@@ -20,54 +20,14 @@ export interface UpdateBudgetBucketInput {
   color?: string
 }
 
-const API_URL = import.meta.env.VITE_API_URL ?? ''
-
-interface GraphQLResponse<T> {
-  data?: T
-  errors?: Array<{ message: string }>
-}
-
-async function graphqlRequest<T>(
-  query: string,
-  variables?: Record<string, unknown>
-): Promise<T> {
-  const request = getRequest()
-  const cookieHeader = request?.headers.get('cookie') || ''
-
-  const response = await fetch(`${API_URL}/graphql`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Cookie': cookieHeader,
-    },
-    body: JSON.stringify({
-      query,
-      variables,
-    }),
-  })
-
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`)
-  }
-
-  const result: GraphQLResponse<T> = await response.json()
-
-  if (result.errors) {
-    throw new Error(result.errors[0]?.message || 'GraphQL error')
-  }
-
-  if (!result.data) {
-    throw new Error('No data returned from GraphQL')
-  }
-
-  return result.data
-}
-
 export const listBudgets = createServerFn({ method: 'GET' })
   .handler(async () => {
+    const userId = await getUserIdFromSession()
+    if (!userId) throw new Error('Not authenticated')
+
     const data = await graphqlRequest<{ budget_buckets: BudgetBucket[] }>(`
-      query GetBudgetBuckets {
-        budget_buckets {
+      query GetBudgetBuckets($userId: ID!) {
+        budget_buckets(userId: $userId) {
           id
           bucket_id
           name
@@ -78,17 +38,20 @@ export const listBudgets = createServerFn({ method: 'GET' })
           updated_at
         }
       }
-    `)
+    `, { userId })
     return data.budget_buckets
   })
 
 export const getBudget = createServerFn({ method: 'GET' })
   .inputValidator(zodValidator(z.object({ bucketId: z.string() })))
   .handler(async ({ data }) => {
+    const userId = await getUserIdFromSession()
+    if (!userId) throw new Error('Not authenticated')
+
     const result = await graphqlRequest<{ budget_bucket: BudgetBucket }>(
       `
-      query GetBudgetBucket($bucketId: String!) {
-        budget_bucket(bucket_id: $bucketId) {
+      query GetBudgetBucket($userId: ID!, $bucketId: String!) {
+        budget_bucket(userId: $userId, bucket_id: $bucketId) {
           id
           bucket_id
           name
@@ -100,7 +63,7 @@ export const getBudget = createServerFn({ method: 'GET' })
         }
       }
     `,
-      { bucketId: data.bucketId }
+      { userId, bucketId: data.bucketId }
     )
     return result.budget_bucket
   })
@@ -115,10 +78,13 @@ export const updateBudget = createServerFn({ method: 'POST' })
     }),
   })))
   .handler(async ({ data }) => {
+    const userId = await getUserIdFromSession()
+    if (!userId) throw new Error('Not authenticated')
+
     const result = await graphqlRequest<{ update_budget_bucket: BudgetBucket }>(
       `
-      mutation UpdateBudgetBucket($bucketId: String!, $input: UpdateBudgetBucketInput!) {
-        update_budget_bucket(bucket_id: $bucketId, input: $input) {
+      mutation UpdateBudgetBucket($userId: ID!, $bucketId: String!, $input: UpdateBudgetBucketInput!) {
+        update_budget_bucket(userId: $userId, bucket_id: $bucketId, input: $input) {
           id
           bucket_id
           name
@@ -130,7 +96,7 @@ export const updateBudget = createServerFn({ method: 'POST' })
         }
       }
     `,
-      { bucketId: data.bucketId, input: data.input }
+      { userId, bucketId: data.bucketId, input: data.input }
     )
     return result.update_budget_bucket
   })

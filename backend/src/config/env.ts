@@ -5,7 +5,9 @@ const envSchema = z.object({
   // Server
   PORT: z.string().default('3000'),
   NODE_ENV: z.enum(['development', 'production']).default('development'),
-  SESSION_SECRET: z.string().min(32, 'SESSION_SECRET must be at least 32 characters'),
+
+  // Auth Service
+  AUTH_SERVICE_URL: z.string().default('http://localhost:4000'),
 
   // Database
   DATABASE_URL: z.string().default('file:./data/crunch.db'),

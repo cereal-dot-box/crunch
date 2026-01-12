@@ -4,13 +4,6 @@ import { BottomNav } from '../components/BottomNav'
 export const Route = createFileRoute('/_protected')({
   beforeLoad: ({ context }) => {
     console.log('[_protected] beforeLoad, context.auth:', context.auth)
-    const isServer = typeof window === 'undefined'
-
-    // Skip redirect during SSR - client will handle auth properly
-    if (isServer) {
-      console.log('[_protected] SSR - skipping auth redirect')
-      return
-    }
 
     if (!context.auth?.isAuthenticated) {
       console.log('[_protected] Not authenticated, redirecting to /login')

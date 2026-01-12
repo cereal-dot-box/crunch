@@ -2,134 +2,171 @@ import { createServerFn } from '@tanstack/react-start'
 import { getRequest, setCookie } from '@tanstack/react-start/server'
 import { z } from 'zod'
 import { zodValidator } from '@tanstack/zod-adapter'
+import { authClient } from '../lib/auth-client'
 
-const API_URL = import.meta.env.VITE_API_URL ?? ''
-
-function forwardCookies(response: Response) {
-  const setCookieHeader = response.headers.get('set-cookie')
-  if (setCookieHeader) {
-    // Parse and forward each cookie, decoding the value to avoid double-encoding
-    const cookies = setCookieHeader.split(/,(?=\s*\w+=)/)
-    for (const cookie of cookies) {
-      const parts = cookie.split(';')
-      const [nameValue, ...optionParts] = parts
-      const eqIndex = nameValue.indexOf('=')
-      if (eqIndex === -1) continue
-
-      const name = nameValue.slice(0, eqIndex).trim()
-      const rawValue = nameValue.slice(eqIndex + 1).trim()
-      // Decode the value to prevent double-encoding
-      const value = decodeURIComponent(rawValue)
-
-      // Parse cookie options
-      const options: Record<string, any> = {}
-      for (const part of optionParts) {
-        const [key, val] = part.split('=').map(s => s.trim())
-        const lowerKey = key.toLowerCase()
-        if (lowerKey === 'max-age') options.maxAge = parseInt(val, 10)
-        else if (lowerKey === 'path') options.path = val
-        else if (lowerKey === 'domain') options.domain = val
-        else if (lowerKey === 'httponly') options.httpOnly = true
-        else if (lowerKey === 'secure') options.secure = true
-        else if (lowerKey === 'samesite') options.sameSite = val.toLowerCase()
-      }
-
-      setCookie(name, value, options)
-    }
-  }
-}
+const AUTH_URL = import.meta.env.VITE_AUTH_URL ?? 'http://localhost:4000'
+const FRONTEND_URL = import.meta.env.VITE_FRONTEND_URL ?? 'http://localhost:3000'
 
 export interface CheckStatusResponse {
   isSetup: boolean
   isAuthenticated: boolean
-}
-
-interface LoginResponse {
-  message: string
-  userId: number
-}
-
-interface RegisterResponse {
-  message: string
-  userId: number
-}
-
-interface LogoutResponse {
-  message?: string
+  user?: {
+    id: string
+    email: string
+    name: string
+  }
 }
 
 export const checkStatus = createServerFn({ method: 'GET' })
-  .handler(async () => {
-    console.log('[checkStatus] ========= CALLED =========')
+  .handler(async (): Promise<CheckStatusResponse> => {
     const request = getRequest()
-    console.log('[checkStatus] request exists:', !!request)
     const cookieHeader = request?.headers.get('cookie') || ''
 
-    console.log('[checkStatus] Cookie header:', cookieHeader || '(empty)')
+    console.log('[checkStatus] Cookie header received:', cookieHeader)
 
-    const response = await fetch(`${API_URL}/api/auth/status`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Cookie': cookieHeader,
+    // Use Better Auth client to get session
+    const { data, error } = await authClient.getSession({
+      fetchOptions: {
+        headers: {
+          Cookie: cookieHeader,
+        },
       },
     })
 
-    console.log('[checkStatus] Response status:', response.status)
+    console.log('[checkStatus] getSession result:', { data, error })
 
-    if (!response.ok) {
-      return { isSetup: false, isAuthenticated: false }
+    return {
+      isSetup: true,
+      isAuthenticated: !!data?.user,
+      user: data?.user ? {
+        id: data.user.id,
+        email: data.user.email,
+        name: data.user.name,
+      } : undefined,
     }
-
-    const data = await response.json() as CheckStatusResponse
-    console.log('[checkStatus] Response data:', data)
-    return data
   })
 
 export const login = createServerFn({ method: 'POST' })
   .inputValidator(zodValidator(z.object({ email: z.string(), password: z.string() })))
   .handler(async ({ data }) => {
-    const response = await fetch(`${API_URL}/api/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    const request = getRequest()
+    const cookieHeader = request?.headers.get('cookie') || ''
+
+    console.log('=== [Login Start] ===')
+    console.log('[Login] Email:', data.email)
+
+    // Use Better Auth client
+    const result = await authClient.signIn.email({
+      email: data.email,
+      password: data.password,
+      fetchOptions: {
+        headers: {
+          Cookie: cookieHeader,
+          Origin: FRONTEND_URL,
+        },
+        onSuccess: (ctx) => {
+          // Forward Set-Cookie headers from auth service to browser
+          const setCookieHeader = ctx.response.headers.get('set-cookie')
+          console.log('[Login] Raw Set-Cookie header:', setCookieHeader)
+          if (setCookieHeader) {
+            // Parse and forward each cookie
+            for (const cookie of setCookieHeader.split(', ')) {
+              console.log('[Login] Parsing cookie:', cookie)
+              const [nameValue, ...attrs] = cookie.split('; ')
+              const [name, ...valueParts] = nameValue.split('=')
+              const value = decodeURIComponent(valueParts.join('='))
+              const options: Record<string, unknown> = { path: '/' }
+
+              for (const attr of attrs) {
+                const [key, val] = attr.split('=')
+                const lowerKey = key.toLowerCase()
+                if (lowerKey === 'max-age') options.maxAge = parseInt(val)
+                else if (lowerKey === 'httponly') options.httpOnly = true
+                else if (lowerKey === 'secure') options.secure = true
+                else if (lowerKey === 'samesite') options.sameSite = val.toLowerCase() as 'lax' | 'strict' | 'none'
+                else if (lowerKey === 'path') options.path = val
+              }
+
+              console.log('[Login] Setting cookie:', { name, value, options })
+              setCookie(name, value, options)
+            }
+          }
+        },
       },
-      body: JSON.stringify(data),
     })
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Login failed' }))
-      throw new Error(error.message || 'Login failed')
+    if (result.error) {
+      console.log('[Login] ERROR:', result.error.message)
+      throw new Error(result.error.message || 'Login failed')
     }
 
-    // Forward cookies from backend to browser
-    forwardCookies(response)
+    console.log('[Login] Better Auth sign-in successful, userId:', result.data?.user?.id)
 
-    const result = await response.json() as LoginResponse
-    return result
+    // NOTE: We skip JWT fetch here because the session cookie hasn't propagated to browser yet.
+    // The JWT will be fetched on-demand in graphql.ts when needed, using the valid session cookie.
+    // This is actually more efficient - JWT is only fetched when GraphQL is actually used.
+
+    console.log('=== [Login End] ===')
+
+    return {
+      message: 'Login successful',
+      userId: result.data?.user?.id,
+    }
   })
 
 export const register = createServerFn({ method: 'POST' })
-  .inputValidator(zodValidator(z.object({ email: z.string(), password: z.string() })))
+  .inputValidator(zodValidator(z.object({ email: z.string(), password: z.string(), name: z.string().optional() })))
   .handler(async ({ data }) => {
-    const response = await fetch(`${API_URL}/api/auth/register`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    const request = getRequest()
+    const cookieHeader = request?.headers.get('cookie') || ''
+
+    // Use Better Auth client
+    const result = await authClient.signUp.email({
+      email: data.email,
+      password: data.password,
+      name: data.name || data.email.split('@')[0],
+      fetchOptions: {
+        headers: {
+          Cookie: cookieHeader,
+          Origin: FRONTEND_URL,
+        },
+        onSuccess: (ctx) => {
+          // Forward Set-Cookie headers from auth service to browser
+          const setCookieHeader = ctx.response.headers.get('set-cookie')
+          if (setCookieHeader) {
+            for (const cookie of setCookieHeader.split(', ')) {
+              const [nameValue, ...attrs] = cookie.split('; ')
+              const [name, ...valueParts] = nameValue.split('=')
+              const value = decodeURIComponent(valueParts.join('='))
+              const options: Record<string, unknown> = { path: '/' }
+
+              for (const attr of attrs) {
+                const [key, val] = attr.split('=')
+                const lowerKey = key.toLowerCase()
+                if (lowerKey === 'max-age') options.maxAge = parseInt(val)
+                else if (lowerKey === 'httponly') options.httpOnly = true
+                else if (lowerKey === 'secure') options.secure = true
+                else if (lowerKey === 'samesite') options.sameSite = val.toLowerCase() as 'lax' | 'strict' | 'none'
+                else if (lowerKey === 'path') options.path = val
+              }
+
+              setCookie(name, value, options)
+            }
+          }
+        },
       },
-      body: JSON.stringify(data),
     })
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Registration failed' }))
-      throw new Error(error.message || 'Registration failed')
+    if (result.error) {
+      throw new Error(result.error.message || 'Registration failed')
     }
 
-    // Forward cookies from backend to browser
-    forwardCookies(response)
+    // NOTE: JWT will be fetched on-demand in graphql.ts when needed
 
-    const result = await response.json() as RegisterResponse
-    return result
+    return {
+      message: 'Registration successful',
+      userId: result.data?.user?.id,
+    }
   })
 
 export const logout = createServerFn({ method: 'POST' })
@@ -137,18 +174,26 @@ export const logout = createServerFn({ method: 'POST' })
     const request = getRequest()
     const cookieHeader = request?.headers.get('cookie') || ''
 
-    const response = await fetch(`${API_URL}/api/auth/logout`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Cookie': cookieHeader,
+    // Use Better Auth client
+    await authClient.signOut({
+      fetchOptions: {
+        headers: {
+          Cookie: cookieHeader,
+          Origin: FRONTEND_URL,
+        },
       },
-      body: JSON.stringify({}),
     })
 
-    // Forward cookies (e.g., to clear the session cookie)
-    forwardCookies(response)
+    // Also explicitly clear cookies on our end
+    setCookie('better-auth.session_token', '', {
+      maxAge: 0,
+      path: '/',
+    })
 
-    const result = await response.json().catch(() => ({})) as LogoutResponse
-    return result
+    setCookie('access_token', '', {
+      maxAge: 0,
+      path: '/',
+    })
+
+    return { message: 'Logged out' }
   })

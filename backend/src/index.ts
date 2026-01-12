@@ -1,6 +1,5 @@
 import Fastify from 'fastify';
 import fastifyCookie from '@fastify/cookie';
-import fastifySession from '@fastify/session';
 import fastifyCors from '@fastify/cors';
 import fastifyHelmet from '@fastify/helmet';
 import mercurius from 'mercurius';
@@ -9,17 +8,14 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { loadEnv, getEnv } from './config/env';
-import { connectDatabase, disconnectDatabase, db } from './lib/database';
+import { connectDatabase, disconnectDatabase } from './lib/database';
 import { errorHandler } from './middleware/error.middleware';
-import { KyselySessionStore } from './lib/kysely-session-store';
 import { resolvers } from './graphql/resolvers';
 import { getEmailScheduler } from './services/email/scheduler.service';
+import { verifyServiceToken, extractToken } from './lib/jwks';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
-// Import routes
-import { authRoutes } from './routes/auth.routes';
 
 async function start() {
   // Load and validate environment
@@ -61,19 +57,6 @@ async function start() {
     credentials: true,
   });
 
-  // Register session plugin with Kysely store
-  await app.register(fastifySession, {
-    store: new KyselySessionStore(db),
-    secret: env.SESSION_SECRET,
-    cookie: {
-      secure: env.NODE_ENV === 'production',
-      httpOnly: true,
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7 * 1000, // 7 days in milliseconds
-    },
-    saveUninitialized: false,
-  });
-
   await app.register(fastifyHelmet, {
     contentSecurityPolicy: env.NODE_ENV === 'production' ? undefined : false,
   });
@@ -87,9 +70,24 @@ async function start() {
   await app.register(mercurius, {
     schema,
     resolvers,
-    context: (request) => ({
-      userId: request.session.userId,
-    }),
+    context: async (request) => {
+      // Extract and verify service JWT token
+      const token = extractToken(request.headers.authorization);
+
+      if (!token) {
+        return { isAuthenticated: false };
+      }
+
+      try {
+        const payload = await verifyServiceToken(token);
+        return {
+          isAuthenticated: true,
+          serviceClient: payload.sub,
+        };
+      } catch {
+        return { isAuthenticated: false };
+      }
+    },
     graphiql: env.NODE_ENV === 'development',
   });
 
@@ -123,15 +121,13 @@ async function start() {
     return { status: 'ok', timestamp: new Date().toISOString() };
   });
 
-  // Register ONLY auth routes
-  await app.register(authRoutes, { prefix: '/api/auth' });
-
   // Start server
   const port = parseInt(env.PORT);
   await app.listen({ port, host: '0.0.0.0' });
 
-  console.log(`\n🚀 Crunch backend running on http://localhost:${port}`);
-  console.log(`📊 Environment: ${env.NODE_ENV}\n`);
+  console.log(`\nCrunch backend running on http://localhost:${port}`);
+  console.log(`Environment: ${env.NODE_ENV}`);
+  console.log(`Auth service: ${process.env.AUTH_SERVICE_URL || 'http://localhost:4000'}\n`);
 
   // Start email sync scheduler in background (non-blocking)
   const emailScheduler = getEmailScheduler();

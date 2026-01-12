@@ -148,33 +148,33 @@ input UpdateSyncSourceInput {
 }
 
 type Query {
-  accounts: [Account!]!
-  budget_buckets: [BudgetBucket!]!
-  budget_bucket(bucket_id: String!): BudgetBucket
-  monthly_periods: [MonthlyPeriod!]!
-  monthly_period(month: String!): MonthlyPeriod
-  current_monthly_period: MonthlyPeriod
-  transactions_by_account(account_id: Int!, limit: Int, offset: Int): TransactionListResponse!
-  transactions(limit: Int, offset: Int): TransactionListResponse!
-  transaction(id: Int!): Transaction
-  sync_sources: [SyncSource!]!
-  sync_sources_by_account(account_id: Int!): [SyncSource!]!
-  sync_source(id: Int!): SyncSource
+  accounts(userId: ID!): [Account!]!
+  budget_buckets(userId: ID!): [BudgetBucket!]!
+  budget_bucket(userId: ID!, bucket_id: String!): BudgetBucket
+  monthly_periods(userId: ID!): [MonthlyPeriod!]!
+  monthly_period(userId: ID!, month: String!): MonthlyPeriod
+  current_monthly_period(userId: ID!): MonthlyPeriod
+  transactions_by_account(userId: ID!, account_id: Int!, limit: Int, offset: Int): TransactionListResponse!
+  transactions(userId: ID!, limit: Int, offset: Int): TransactionListResponse!
+  transaction(userId: ID!, id: Int!): Transaction
+  sync_sources(userId: ID!): [SyncSource!]!
+  sync_sources_by_account(userId: ID!, account_id: Int!): [SyncSource!]!
+  sync_source(userId: ID!, id: Int!): SyncSource
   available_bank_types: [AvailableBankType!]!
 }
 
 type Mutation {
-  add_account(input: AddAccountInput!): Account!
-  add_sync_source(input: AddSyncSourceInput!): SyncSource!
-  update_sync_source(id: Int!, input: UpdateSyncSourceInput!): SyncSource!
-  sync_accounts: Boolean!
-  deactivate_account(account_id: Int!): Boolean!
-  update_budget_bucket(bucket_id: String!, input: UpdateBudgetBucketInput!): BudgetBucket!
-  create_monthly_period(input: CreateMonthlyPeriodInput!): MonthlyPeriod!
-  update_monthly_period(id: Int!, input: UpdateMonthlyPeriodInput!): MonthlyPeriod!
-  close_monthly_period(id: Int!): MonthlyPeriod!
-  delete_monthly_period(id: Int!): Boolean!
-  delete_sync_source(id: Int!): Boolean!
-  test_sync_source_connection(id: Int!): TestConnectionResult!
-  sync_sync_source(id: Int!): SyncResult!
+  add_account(userId: ID!, input: AddAccountInput!): Account!
+  add_sync_source(userId: ID!, input: AddSyncSourceInput!): SyncSource!
+  update_sync_source(userId: ID!, id: Int!, input: UpdateSyncSourceInput!): SyncSource!
+  sync_accounts(userId: ID!): Boolean!
+  deactivate_account(userId: ID!, account_id: Int!): Boolean!
+  update_budget_bucket(userId: ID!, bucket_id: String!, input: UpdateBudgetBucketInput!): BudgetBucket!
+  create_monthly_period(userId: ID!, input: CreateMonthlyPeriodInput!): MonthlyPeriod!
+  update_monthly_period(userId: ID!, id: Int!, input: UpdateMonthlyPeriodInput!): MonthlyPeriod!
+  close_monthly_period(userId: ID!, id: Int!): MonthlyPeriod!
+  delete_monthly_period(userId: ID!, id: Int!): Boolean!
+  delete_sync_source(userId: ID!, id: Int!): Boolean!
+  test_sync_source_connection(userId: ID!, id: Int!): TestConnectionResult!
+  sync_sync_source(userId: ID!, id: Int!): SyncResult!
 }

@@ -11,20 +11,14 @@ export const Route = createRootRoute({
   beforeLoad: async ({ context }) => {
     console.log('[__root] beforeLoad starting')
     try {
-      const isServer = typeof window === 'undefined'
+      // Check cache first, only fetch if not cached
+      let auth = context.queryClient.getQueryData(authQuery.queryKey)
 
-      if (isServer) {
-        // During SSR, we can't reliably access browser cookies
-        // Return unauthenticated - client will fetch fresh data
-        console.log('[__root] SSR - skipping auth check')
-        return { auth: { isSetup: true, isAuthenticated: false } }
+      if (!auth) {
+        // Only fetch if not in cache (uses query's staleTime)
+        auth = await context.queryClient.fetchQuery(authQuery)
       }
 
-      // On client, always fetch fresh auth (bypass any SSR-cached data)
-      const auth = await context.queryClient.fetchQuery({
-        ...authQuery,
-        staleTime: 0, // Force fresh fetch on client
-      })
       console.log('[__root] auth result:', auth)
       return { auth }
     } catch (error) {

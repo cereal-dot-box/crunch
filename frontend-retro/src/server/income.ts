@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
-import { getRequest } from '@tanstack/react-start/server'
 import { z } from 'zod'
 import { zodValidator } from '@tanstack/zod-adapter'
+import { graphqlRequest, getUserIdFromSession } from './graphql'
 
 export interface MonthlyPeriod {
   id: number
@@ -30,54 +30,14 @@ export interface UpdateMonthlyPeriodInput {
   notes?: string
 }
 
-const API_URL = import.meta.env.VITE_API_URL ?? ''
-
-interface GraphQLResponse<T> {
-  data?: T
-  errors?: Array<{ message: string }>
-}
-
-async function graphqlRequest<T>(
-  query: string,
-  variables?: Record<string, unknown>
-): Promise<T> {
-  const request = getRequest()
-  const cookieHeader = request?.headers.get('cookie') || ''
-
-  const response = await fetch(`${API_URL}/graphql`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Cookie': cookieHeader,
-    },
-    body: JSON.stringify({
-      query,
-      variables,
-    }),
-  })
-
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`)
-  }
-
-  const result: GraphQLResponse<T> = await response.json()
-
-  if (result.errors) {
-    throw new Error(result.errors[0]?.message || 'GraphQL error')
-  }
-
-  if (!result.data) {
-    throw new Error('No data returned from GraphQL')
-  }
-
-  return result.data
-}
-
 export const listMonthlyPeriods = createServerFn({ method: 'GET' })
   .handler(async () => {
+    const userId = await getUserIdFromSession()
+    if (!userId) throw new Error('Not authenticated')
+
     const data = await graphqlRequest<{ monthly_periods: MonthlyPeriod[] }>(`
-      query GetMonthlyPeriods {
-        monthly_periods {
+      query GetMonthlyPeriods($userId: ID!) {
+        monthly_periods(userId: $userId) {
           id
           user_id
           month
@@ -91,15 +51,18 @@ export const listMonthlyPeriods = createServerFn({ method: 'GET' })
           is_closed
         }
       }
-    `)
+    `, { userId })
     return data.monthly_periods
   })
 
 export const getCurrentPeriod = createServerFn({ method: 'GET' })
   .handler(async () => {
+    const userId = await getUserIdFromSession()
+    if (!userId) throw new Error('Not authenticated')
+
     const data = await graphqlRequest<{ current_monthly_period: MonthlyPeriod | null }>(`
-      query GetCurrentMonthlyPeriod {
-        current_monthly_period {
+      query GetCurrentMonthlyPeriod($userId: ID!) {
+        current_monthly_period(userId: $userId) {
           id
           user_id
           month
@@ -112,17 +75,20 @@ export const getCurrentPeriod = createServerFn({ method: 'GET' })
           is_open
         }
       }
-    `)
+    `, { userId })
     return data.current_monthly_period
   })
 
 export const getMonthlyPeriod = createServerFn({ method: 'GET' })
   .inputValidator(zodValidator(z.object({ month: z.string() })))
   .handler(async ({ data }) => {
+    const userId = await getUserIdFromSession()
+    if (!userId) throw new Error('Not authenticated')
+
     const result = await graphqlRequest<{ monthly_period: MonthlyPeriod }>(
       `
-      query GetMonthlyPeriod($month: String!) {
-        monthly_period(month: $month) {
+      query GetMonthlyPeriod($userId: ID!, $month: String!) {
+        monthly_period(userId: $userId, month: $month) {
           id
           user_id
           month
@@ -137,7 +103,7 @@ export const getMonthlyPeriod = createServerFn({ method: 'GET' })
         }
       }
     `,
-      { month: data.month }
+      { userId, month: data.month }
     )
     return result.monthly_period
   })
@@ -149,10 +115,13 @@ export const createMonthlyPeriod = createServerFn({ method: 'POST' })
     notes: z.string().optional(),
   })))
   .handler(async ({ data: input }) => {
+    const userId = await getUserIdFromSession()
+    if (!userId) throw new Error('Not authenticated')
+
     const result = await graphqlRequest<{ create_monthly_period: MonthlyPeriod }>(
       `
-      mutation CreateMonthlyPeriod($input: CreateMonthlyPeriodInput!) {
-        create_monthly_period(input: $input) {
+      mutation CreateMonthlyPeriod($userId: ID!, $input: CreateMonthlyPeriodInput!) {
+        create_monthly_period(userId: $userId, input: $input) {
           id
           user_id
           month
@@ -166,7 +135,7 @@ export const createMonthlyPeriod = createServerFn({ method: 'POST' })
         }
       }
     `,
-      { input }
+      { userId, input }
     )
     return result.create_monthly_period
   })
@@ -182,10 +151,13 @@ export const updateMonthlyPeriod = createServerFn({ method: 'POST' })
     }),
   })))
   .handler(async ({ data }) => {
+    const userId = await getUserIdFromSession()
+    if (!userId) throw new Error('Not authenticated')
+
     const result = await graphqlRequest<{ update_monthly_period: MonthlyPeriod }>(
       `
-      mutation UpdateMonthlyPeriod($id: Int!, $input: UpdateMonthlyPeriodInput!) {
-        update_monthly_period(id: $id, input: $input) {
+      mutation UpdateMonthlyPeriod($userId: ID!, $id: Int!, $input: UpdateMonthlyPeriodInput!) {
+        update_monthly_period(userId: $userId, id: $id, input: $input) {
           id
           user_id
           month
@@ -200,7 +172,7 @@ export const updateMonthlyPeriod = createServerFn({ method: 'POST' })
         }
       }
     `,
-      { id: data.id, input: data.input }
+      { userId, id: data.id, input: data.input }
     )
     return result.update_monthly_period
   })
@@ -208,10 +180,13 @@ export const updateMonthlyPeriod = createServerFn({ method: 'POST' })
 export const closeMonthlyPeriod = createServerFn({ method: 'POST' })
   .inputValidator(zodValidator(z.object({ id: z.number() })))
   .handler(async ({ data }) => {
+    const userId = await getUserIdFromSession()
+    if (!userId) throw new Error('Not authenticated')
+
     const result = await graphqlRequest<{ close_monthly_period: MonthlyPeriod }>(
       `
-      mutation CloseMonthlyPeriod($id: Int!) {
-        close_monthly_period(id: $id) {
+      mutation CloseMonthlyPeriod($userId: ID!, $id: Int!) {
+        close_monthly_period(userId: $userId, id: $id) {
           id
           user_id
           month
@@ -226,7 +201,7 @@ export const closeMonthlyPeriod = createServerFn({ method: 'POST' })
         }
       }
     `,
-      { id: data.id }
+      { userId, id: data.id }
     )
     return result.close_monthly_period
   })
@@ -234,13 +209,16 @@ export const closeMonthlyPeriod = createServerFn({ method: 'POST' })
 export const deleteMonthlyPeriod = createServerFn({ method: 'POST' })
   .inputValidator(zodValidator(z.object({ id: z.number() })))
   .handler(async ({ data }) => {
+    const userId = await getUserIdFromSession()
+    if (!userId) throw new Error('Not authenticated')
+
     const result = await graphqlRequest<{ delete_monthly_period: boolean }>(
       `
-      mutation DeleteMonthlyPeriod($id: Int!) {
-        delete_monthly_period(id: $id)
+      mutation DeleteMonthlyPeriod($userId: ID!, $id: Int!) {
+        delete_monthly_period(userId: $userId, id: $id)
       }
     `,
-      { id: data.id }
+      { userId, id: data.id }
     )
     return result.delete_monthly_period
   })
