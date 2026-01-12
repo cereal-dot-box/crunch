@@ -23,15 +23,15 @@ export class SyncSource {
   }
 
   static getByAccountId: (accountId: number) => Promise<SyncSource[]>;
-  static getByUserId: (userId: number) => Promise<SyncSource[]>;
-  static getActiveByUserId: (userId: number) => Promise<SyncSource[]>;
-  static getById: (id: number, userId: number) => Promise<SyncSource | null>;
+  static getByUserId: (userId: string) => Promise<SyncSource[]>;
+  static getActiveByUserId: (userId: string) => Promise<SyncSource[]>;
+  static getById: (id: number, userId: string) => Promise<SyncSource | null>;
   static create: (params: CreateSyncSourceParams) => Promise<SyncSourceRow>;
-  static delete: (id: number, userId: number) => Promise<void>;
+  static delete: (id: number, userId: string) => Promise<void>;
   static updateStatus: (id: number, status: 'active' | 'error') => Promise<void>;
   static updateLastSynced: (syncSourceId: number, lastProcessedUid?: string) => Promise<void>;
   static getWithStats: (syncSourceId: number) => Promise<SyncSourceWithStats | null>;
-  static update: (id: number, userId: number, params: UpdateSyncSourceParams) => Promise<SyncSource | null>;
+  static update: (id: number, userId: string, params: UpdateSyncSourceParams) => Promise<SyncSource | null>;
 }
 
 // Static factory methods
@@ -40,17 +40,17 @@ SyncSource.getByAccountId = async (accountId: number): Promise<SyncSource[]> => 
   return rows.map(row => new SyncSource(row));
 };
 
-SyncSource.getByUserId = async (userId: number): Promise<SyncSource[]> => {
+SyncSource.getByUserId = async (userId: string): Promise<SyncSource[]> => {
   const rows = await repo.getSyncSourcesByUserId(userId);
   return rows.map(row => new SyncSource(row));
 };
 
-SyncSource.getActiveByUserId = async (userId: number): Promise<SyncSource[]> => {
+SyncSource.getActiveByUserId = async (userId: string): Promise<SyncSource[]> => {
   const rows = await repo.getActiveSyncSources(userId);
   return rows.map(row => new SyncSource(row));
 };
 
-SyncSource.getById = async (id: number, userId: number): Promise<SyncSource | null> => {
+SyncSource.getById = async (id: number, userId: string): Promise<SyncSource | null> => {
   const row = await repo.getSyncSourceById(id, userId);
   return row ? new SyncSource(row) : null;
 };
@@ -59,7 +59,7 @@ SyncSource.create = async (params: CreateSyncSourceParams): Promise<SyncSourceRo
   return await repo.createSyncSource(params);
 };
 
-SyncSource.delete = async (id: number, userId: number): Promise<void> => {
+SyncSource.delete = async (id: number, userId: string): Promise<void> => {
   await repo.deleteSyncSource(id, userId);
 };
 
@@ -75,7 +75,7 @@ SyncSource.getWithStats = async (syncSourceId: number): Promise<SyncSourceWithSt
   return await repo.getSyncSourceWithStats(syncSourceId);
 };
 
-SyncSource.update = async (id: number, userId: number, params: UpdateSyncSourceParams): Promise<SyncSource | null> => {
+SyncSource.update = async (id: number, userId: string, params: UpdateSyncSourceParams): Promise<SyncSource | null> => {
   const row = await repo.updateSyncSource(id, userId, params);
   return row ? new SyncSource(row) : null;
 };

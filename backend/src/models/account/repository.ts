@@ -17,7 +17,7 @@ export async function createAccount(params: CreateAccountParams): Promise<Accoun
     .executeTakeFirstOrThrow();
 }
 
-export async function getAccountsByUserId(userId: number): Promise<AccountRow[]> {
+export async function getAccountsByUserId(userId: string): Promise<AccountRow[]> {
   return await db
     .selectFrom('Account')
     .selectAll()
@@ -26,7 +26,7 @@ export async function getAccountsByUserId(userId: number): Promise<AccountRow[]>
     .execute();
 }
 
-export async function getAccountById(accountId: number, userId: number): Promise<AccountRow | undefined> {
+export async function getAccountById(accountId: number, userId: string): Promise<AccountRow | undefined> {
   return await db
     .selectFrom('Account')
     .selectAll()
@@ -35,7 +35,7 @@ export async function getAccountById(accountId: number, userId: number): Promise
     .executeTakeFirst();
 }
 
-export async function deactivateAccount(accountId: number, userId: number): Promise<void> {
+export async function deactivateAccount(accountId: number, userId: string): Promise<void> {
   // Import here to avoid circular dependency
   const { Transaction } = await import('../transaction');
   const { BalanceUpdate } = await import('../balance-update');
@@ -55,7 +55,7 @@ export async function deactivateAccount(accountId: number, userId: number): Prom
     .execute();
 }
 
-export async function updateAccount(accountId: number, userId: number, updates: UpdateAccountParams) {
+export async function updateAccount(accountId: number, userId: string, updates: UpdateAccountParams) {
   return await db
     .updateTable('Account')
     .set({ ...updates, updated_at: new Date().toISOString() })

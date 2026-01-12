@@ -4,6 +4,9 @@ import { ProcessedEmail } from '../../models/processed-emails';
 import { EmailAlertDLQ } from '../../models/email-alert-dlq';
 import { getEmailProcessQueue } from '../../queues/definitions';
 import type { EmailProcessJobData } from '../../queues/job-types';
+import { loggers } from '../../lib/logger';
+
+const log = loggers.email;
 
 export interface SyncResult {
   syncSourceName: string;
@@ -23,7 +26,7 @@ export class EmailSyncService {
   ): Promise<SyncResult> {
     const startTime = Date.now();
 
-    console.log(`[EmailSync] Starting sync for sync source ${syncSourceId}`);
+    log.info({ syncSourceId }, 'Starting sync for sync source');
 
     const result: SyncResult = {
       syncSourceName: `Source ${syncSourceId}`,
@@ -50,7 +53,7 @@ export class EmailSyncService {
       const dlqUids = await EmailAlertDLQ.getMessageUids(userId);
       const dlqUidsSet = new Set(dlqUids);
 
-      console.log(`[EmailSync] Skipping ${processedUids.length} processed emails and ${dlqUidsSet.size} failed emails`);
+      log.debug({ processedCount: processedUids.length, dlqCount: dlqUidsSet.size }, 'Skipping already processed/failed emails');
 
       // Connect to IMAP and fetch emails
       const imapService = new ImapService(syncSource);
@@ -59,7 +62,7 @@ export class EmailSyncService {
       const emails = await imapService.fetchNewEmails();
       result.emailsFetched = emails.length;
 
-      console.log(`[EmailSync] Fetched ${emails.length} emails from IMAP`);
+      log.debug({ count: emails.length }, 'Fetched emails from IMAP');
 
       if (emails.length === 0) {
         await imapService.disconnect();
@@ -76,13 +79,13 @@ export class EmailSyncService {
         try {
           // Skip if already processed
           if (processedUidsSet.has(uid)) {
-            console.log(`[EmailSync] Email ${uid} already processed, skipping`);
+            log.trace({ uid }, 'Email already processed, skipping');
             continue;
           }
 
           // Skip if there's a DLQ entry (already failed after retries)
           if (dlqUidsSet.has(uid)) {
-            console.log(`[EmailSync] Email ${uid} already in DLQ (failed before), skipping`);
+            log.trace({ uid }, 'Email already in DLQ, skipping');
             continue;
           }
 
@@ -111,9 +114,9 @@ export class EmailSyncService {
 
           result.jobsEnqueued++;
 
-          console.log(`[EmailSync] Enqueued job for email ${uid}`);
+          log.debug({ uid }, 'Enqueued job for email');
         } catch (error) {
-          console.error(`[EmailSync] Error queuing email ${uid}:`, error);
+          log.error({ err: error, uid }, 'Error queuing email');
           result.errors++;
         }
       }
@@ -125,14 +128,17 @@ export class EmailSyncService {
 
       result.duration = Date.now() - startTime;
 
-      console.log(
-        `[EmailSync] Sync complete: ${result.emailsFetched} fetched, ${result.jobsEnqueued} enqueued, ${result.errors} errors (${result.duration}ms)`
-      );
+      log.info({
+        emailsFetched: result.emailsFetched,
+        jobsEnqueued: result.jobsEnqueued,
+        errors: result.errors,
+        durationMs: result.duration,
+      }, 'Sync complete');
 
       return result;
     } catch (error) {
       result.duration = Date.now() - startTime;
-      console.error(`[EmailSync] Sync failed for source ${syncSourceId}:`, error);
+      log.error({ err: error, syncSourceId }, 'Sync failed for source');
       throw error;
     }
   }

@@ -462,3 +462,37 @@ cd crunch/frontend-retro && bun run dev
 - **Separation of concerns** - User auth (sessions) vs service auth (client credentials)
 - **HS256 shared secret** - Simple, fast verification for trusted services
 - **No user tokens in backend** - Backend only sees service tokens + userId
+
+## Database Architecture
+
+### User Storage
+
+The **auth service is the source of truth for users**. The backend does **NOT** maintain its own User table.
+
+**Why no User table in the backend?**
+- Eliminates sync issues between auth service and backend
+- No foreign key constraint failures when auth service has users the backend doesn't know about
+- Simpler architecture - single source of truth
+
+**Implementation:**
+- Migration 015 (`remove_user_table`) dropped the backend's User table
+- All tables (Account, Transaction, etc.) have `user_id` as a plain TEXT field
+- No foreign key constraints on `user_id` - it's just a UUID string from the auth service
+- The backend trusts that any valid UUID from the auth service is a legitimate user
+
+**Table schema example (Account):**
+```sql
+CREATE TABLE "Account" (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id         TEXT NOT NULL,  -- ← UUID from auth service, no FK constraint
+  name            TEXT NOT NULL,
+  bank            TEXT,
+  type            TEXT,
+  ...
+)
+```
+
+**Benefits:**
+- Can create accounts/transactions for any userId from auth service
+- No migration needed when auth service adds new users
+- Simpler database schema without redundant user data

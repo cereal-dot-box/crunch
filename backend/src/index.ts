@@ -13,6 +13,9 @@ import { errorHandler } from './middleware/error.middleware';
 import { resolvers } from './graphql/resolvers';
 import { getEmailScheduler } from './services/email/scheduler.service';
 import { verifyServiceToken, extractToken } from './lib/jwks';
+import { loggers } from './lib/logger';
+
+const log = loggers.server;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -125,19 +128,17 @@ async function start() {
   const port = parseInt(env.PORT);
   await app.listen({ port, host: '0.0.0.0' });
 
-  console.log(`\nCrunch backend running on http://localhost:${port}`);
-  console.log(`Environment: ${env.NODE_ENV}`);
-  console.log(`Auth service: ${process.env.AUTH_SERVICE_URL || 'http://localhost:4000'}\n`);
+  log.info({ port, env: env.NODE_ENV, authService: process.env.AUTH_SERVICE_URL || 'http://localhost:4000' }, 'Crunch backend started');
 
   // Start email sync scheduler in background (non-blocking)
   const emailScheduler = getEmailScheduler();
   emailScheduler.start().catch((error) => {
-    console.error('Email scheduler failed to start:', error);
+    log.error({ err: error }, 'Email scheduler failed to start');
   });
 
   // Shutdown handler
   const shutdown = async () => {
-    console.log('Shutting down...');
+    log.info('Shutting down...');
     await emailScheduler.stop();
     await disconnectDatabase();
     process.exit(0);
@@ -148,6 +149,6 @@ async function start() {
 }
 
 start().catch((error) => {
-  console.error('Failed to start server:', error);
+  log.fatal({ err: error }, 'Failed to start server');
   process.exit(1);
 });

@@ -29,7 +29,7 @@ export async function createTransaction(params: CreateTransactionParams): Promis
 
 export async function getTransactionsByAccountId(
   accountId: number,
-  userId: number,
+  userId: string,
   limit: number = 50,
   offset: number = 0
 ): Promise<TransactionRow[]> {
@@ -46,7 +46,7 @@ export async function getTransactionsByAccountId(
 }
 
 export async function getTransactionsByUserId(
-  userId: number,
+  userId: string,
   limit: number = 50,
   offset: number = 0
 ): Promise<TransactionRow[]> {
@@ -79,7 +79,7 @@ export async function getTransactionsBySyncSourceId(
 
 export async function getTransactionById(
   id: number,
-  userId: number
+  userId: string
 ): Promise<TransactionRow | undefined> {
   return await db
     .selectFrom('Transaction')
@@ -89,7 +89,7 @@ export async function getTransactionById(
     .executeTakeFirst();
 }
 
-export async function deleteTransactionsByAccountId(accountId: number, userId: number) {
+export async function deleteTransactionsByAccountId(accountId: number, userId: string) {
   return await db
     .deleteFrom('Transaction')
     .where('account_id', '=', accountId)
@@ -102,7 +102,7 @@ export async function deleteTransactionsByAccountId(accountId: number, userId: n
  */
 export async function getTransactionsCountByAccountId(
   accountId: number,
-  userId: number
+  userId: string
 ): Promise<number> {
   const result = await db
     .selectFrom('Transaction')
@@ -117,7 +117,7 @@ export async function getTransactionsCountByAccountId(
 /**
  * Get the total count of transactions for a user
  */
-export async function getTransactionsCountByUserId(userId: number): Promise<number> {
+export async function getTransactionsCountByUserId(userId: string): Promise<number> {
   const result = await db
     .selectFrom('Transaction')
     .select(({ fn }) => [fn.count('id').as('count')])

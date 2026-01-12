@@ -15,7 +15,7 @@ export class User {
 }
 
 // Static factory methods
-User.getById = async (id: number): Promise<User | null> => {
+User.getById = async (id: string): Promise<User | null> => {
   const row = await repo.getUserById(id);
   return row ? new User(row) : null;
 };
@@ -31,6 +31,14 @@ User.emailExists = async (email: string): Promise<boolean> => {
 
 User.create = async (params: CreateUserParams): Promise<UserRow> => {
   return await repo.createUser(params);
+};
+
+User.getOrCreateById = async (id: string, email: string): Promise<UserRow> => {
+  return await repo.getOrCreateUserById(id, email);
+};
+
+User.ensureExists = async (id: string): Promise<UserRow> => {
+  return await repo.ensureUserExists(id);
 };
 
 export type { UserRow, CreateUserParams };

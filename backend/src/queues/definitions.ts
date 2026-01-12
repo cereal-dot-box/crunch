@@ -1,6 +1,9 @@
 import { Queue } from 'bullmq';
 import { getRedis } from '../config/redis';
 import { QUEUE_NAMES } from './job-types';
+import { loggers } from '../lib/logger';
+
+const log = loggers.queue;
 
 /**
  * Default job options for all queues
@@ -38,7 +41,7 @@ export function getQueue(name: string): Queue {
     });
 
     queue.on('error', (err) => {
-      console.error(`[Queue:${name}] Error:`, err);
+      log.error({ err, queueName: name }, 'Queue error');
     });
 
     queues.set(name, queue);
@@ -61,7 +64,7 @@ export async function closeAllQueues(): Promise<void> {
   const closingPromises = Array.from(queues.values()).map((queue) => queue.close());
   await Promise.allSettled(closingPromises);
   queues.clear();
-  console.log('[Queues] All queues closed');
+  log.info('All queues closed');
 }
 
 /**
@@ -77,7 +80,7 @@ export async function cleanObsoleteQueues(): Promise<void> {
 export async function pauseQueue(name: string): Promise<void> {
   const queue = getQueue(name);
   await queue.pause();
-  console.log(`[Queue:${name}] Paused`);
+  log.info({ queueName: name }, 'Queue paused');
 }
 
 /**
@@ -86,7 +89,7 @@ export async function pauseQueue(name: string): Promise<void> {
 export async function resumeQueue(name: string): Promise<void> {
   const queue = getQueue(name);
   await queue.resume();
-  console.log(`[Queue:${name}] Resumed`);
+  log.info({ queueName: name }, 'Queue resumed');
 }
 
 /**

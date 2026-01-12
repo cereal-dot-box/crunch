@@ -21,7 +21,7 @@ export async function createBalanceUpdate(params: CreateBalanceUpdateParams): Pr
 
 export async function getBalanceUpdatesByAccountId(
   accountId: number,
-  userId: number,
+  userId: string,
   limit: number = 50,
   offset: number = 0
 ): Promise<BalanceUpdateRow[]> {
@@ -38,7 +38,7 @@ export async function getBalanceUpdatesByAccountId(
 }
 
 export async function getBalanceUpdatesByUserId(
-  userId: number,
+  userId: string,
   limit: number = 50,
   offset: number = 0
 ): Promise<BalanceUpdateRow[]> {
@@ -55,7 +55,7 @@ export async function getBalanceUpdatesByUserId(
 
 export async function getLatestBalanceForAccount(
   accountId: number,
-  userId: number,
+  userId: string,
   balanceType: 'available_balance' | 'current_balance'
 ): Promise<BalanceUpdateRow | undefined> {
   return await db
@@ -76,14 +76,14 @@ export async function getLatestBalanceForAccount(
  */
 export async function getCurrentBalance(
   accountId: number,
-  userId: number,
+  userId: string,
   balanceType: 'available_balance' | 'current_balance' = 'available_balance'
 ): Promise<number | null> {
   const latest = await getLatestBalanceForAccount(accountId, userId, balanceType);
   return latest?.new_balance ?? null;
 }
 
-export async function deleteBalanceUpdatesByAccountId(accountId: number, userId: number) {
+export async function deleteBalanceUpdatesByAccountId(accountId: number, userId: string) {
   return await db
     .deleteFrom('BalanceUpdate')
     .where('account_id', '=', accountId)

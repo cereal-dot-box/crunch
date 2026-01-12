@@ -1,6 +1,9 @@
 import { ImapClient, EmailMessage } from './imap-client';
 import { decryptImapPassword } from '../../lib/encryption';
 import type { SyncSourceTable } from '../../types/database';
+import { loggers } from '../../lib/logger';
+
+const log = loggers.imap;
 
 /**
  * Shared interface for IMAP connection details
@@ -118,7 +121,7 @@ export class ImapService {
       await this.disconnect();
       return true;
     } catch (error) {
-      console.error('IMAP connection test failed:', error);
+      log.error({ err: error }, 'IMAP connection test failed');
       await this.disconnect();
       return false;
     }

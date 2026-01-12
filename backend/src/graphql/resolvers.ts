@@ -8,6 +8,9 @@ import { MonthlyPeriod } from '../models/monthly-period';
 import { EmailSyncService } from '../services/email/sync.service';
 import { ImapService } from '../services/email/imap.service';
 import { getEmailParserService } from '../services/email/parser.service';
+import { loggers } from '../lib/logger';
+
+const log = loggers.graphql;
 
 interface Context extends MercuriusContext {
   isAuthenticated: boolean;
@@ -414,7 +417,7 @@ export const resolvers = {
         try {
           await syncService.syncSyncSource(source.id, userId);
         } catch (error) {
-          console.error(`Failed to sync sync source ${source.id}:`, error);
+          log.error({ err: error, syncSourceId: source.id }, 'Failed to sync sync source');
           // Continue with other sources even if one fails
         }
       }

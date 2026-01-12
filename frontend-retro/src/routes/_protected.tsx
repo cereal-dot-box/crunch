@@ -1,15 +1,18 @@
 import { createFileRoute, redirect, Outlet, Link, Navigate, useRouter } from '@tanstack/react-router'
 import { BottomNav } from '../components/BottomNav'
+import { loggers } from '../lib/logger'
+
+const log = loggers.router
 
 export const Route = createFileRoute('/_protected')({
   beforeLoad: ({ context }) => {
-    console.log('[_protected] beforeLoad, context.auth:', context.auth)
+    log.debug('beforeLoad, context.auth:', context.auth)
 
     if (!context.auth?.isAuthenticated) {
-      console.log('[_protected] Not authenticated, redirecting to /login')
+      log.debug('Not authenticated, redirecting to /login')
       throw redirect({ to: '/login' })
     }
-    console.log('[_protected] Authenticated, proceeding')
+    log.debug('Authenticated, proceeding')
   },
   component: ProtectedLayout,
   errorComponent: ProtectedErrorBoundary,
@@ -21,7 +24,7 @@ function ProtectedErrorBoundary({ error }: { error: Error }) {
 
   // If error is auth-related, redirect to login immediately
   if (errorMessage.includes('401') || errorMessage.includes('unauthorized')) {
-    console.log('[_protected] Auth error caught, redirecting to /login')
+    log.warn('Auth error caught, redirecting to /login')
     return <Navigate to="/login" />
   }
 

@@ -39,20 +39,20 @@ export class Transaction {
     };
   }
 
-  static getByAccountId: (accountId: number, userId: number, limit?: number, offset?: number) => Promise<Transaction[]>;
-  static getByUserId: (userId: number, limit?: number, offset?: number) => Promise<Transaction[]>;
+  static getByAccountId: (accountId: number, userId: string, limit?: number, offset?: number) => Promise<Transaction[]>;
+  static getByUserId: (userId: string, limit?: number, offset?: number) => Promise<Transaction[]>;
   static getBySyncSourceId: (syncSourceId: number, limit?: number, offset?: number) => Promise<Transaction[]>;
-  static getById: (id: number, userId: number) => Promise<Transaction | null>;
+  static getById: (id: number, userId: string) => Promise<Transaction | null>;
   static create: (params: CreateTransactionParams) => Promise<TransactionRow>;
-  static deleteByAccountId: (accountId: number, userId: number) => Promise<void>;
-  static getCountByAccountId: (accountId: number, userId: number) => Promise<number>;
-  static getCountByUserId: (userId: number) => Promise<number>;
+  static deleteByAccountId: (accountId: number, userId: string) => Promise<void>;
+  static getCountByAccountId: (accountId: number, userId: string) => Promise<number>;
+  static getCountByUserId: (userId: string) => Promise<number>;
 }
 
 // Static factory methods
 Transaction.getByAccountId = async (
   accountId: number,
-  userId: number,
+  userId: string,
   limit?: number,
   offset?: number
 ): Promise<Transaction[]> => {
@@ -61,7 +61,7 @@ Transaction.getByAccountId = async (
 };
 
 Transaction.getByUserId = async (
-  userId: number,
+  userId: string,
   limit?: number,
   offset?: number
 ): Promise<Transaction[]> => {
@@ -80,7 +80,7 @@ Transaction.getBySyncSourceId = async (
 
 Transaction.getById = async (
   id: number,
-  userId: number
+  userId: string
 ): Promise<Transaction | null> => {
   const row = await repo.getTransactionById(id, userId);
   return row ? new Transaction(row) : null;
@@ -90,15 +90,15 @@ Transaction.create = async (params: CreateTransactionParams): Promise<Transactio
   return await repo.createTransaction(params);
 };
 
-Transaction.deleteByAccountId = async (accountId: number, userId: number): Promise<void> => {
+Transaction.deleteByAccountId = async (accountId: number, userId: string): Promise<void> => {
   await repo.deleteTransactionsByAccountId(accountId, userId);
 };
 
-Transaction.getCountByAccountId = async (accountId: number, userId: number): Promise<number> => {
+Transaction.getCountByAccountId = async (accountId: number, userId: string): Promise<number> => {
   return await repo.getTransactionsCountByAccountId(accountId, userId);
 };
 
-Transaction.getCountByUserId = async (userId: number): Promise<number> => {
+Transaction.getCountByUserId = async (userId: string): Promise<number> => {
   return await repo.getTransactionsCountByUserId(userId);
 };
 

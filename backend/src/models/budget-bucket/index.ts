@@ -2,11 +2,11 @@ import * as repo from './repository';
 import type { BudgetBucketRow, CreateBudgetBucketParams, UpdateBudgetBucketParams } from './types';
 
 export class BudgetBucket {
-  static getByUserId: (userId: number) => Promise<BudgetBucket[]>;
-  static get: (userId: number, bucketId: string) => Promise<BudgetBucket | null>;
+  static getByUserId: (userId: string) => Promise<BudgetBucket[]>;
+  static get: (userId: string, bucketId: string) => Promise<BudgetBucket | null>;
   static create: (params: CreateBudgetBucketParams) => Promise<BudgetBucketRow>;
-  static update: (userId: number, bucketId: string, params: UpdateBudgetBucketParams) => Promise<BudgetBucket | null>;
-  static initializeDefaults: (userId: number) => Promise<BudgetBucket[]>;
+  static update: (userId: string, bucketId: string, params: UpdateBudgetBucketParams) => Promise<BudgetBucket | null>;
+  static initializeDefaults: (userId: string) => Promise<BudgetBucket[]>;
   constructor(private data: BudgetBucketRow) {}
 
   get id() { return this.data.id; }
@@ -25,12 +25,12 @@ export class BudgetBucket {
 }
 
 // Static factory methods
-BudgetBucket.getByUserId = async (userId: number): Promise<BudgetBucket[]> => {
+BudgetBucket.getByUserId = async (userId: string): Promise<BudgetBucket[]> => {
   const rows = await repo.getBudgetBucketsByUserId(userId);
   return rows.map(row => new BudgetBucket(row));
 };
 
-BudgetBucket.get = async (userId: number, bucketId: string): Promise<BudgetBucket | null> => {
+BudgetBucket.get = async (userId: string, bucketId: string): Promise<BudgetBucket | null> => {
   const row = await repo.getBudgetBucket(userId, bucketId);
   return row ? new BudgetBucket(row) : null;
 };
@@ -40,7 +40,7 @@ BudgetBucket.create = async (params: CreateBudgetBucketParams): Promise<BudgetBu
 };
 
 BudgetBucket.update = async (
-  userId: number,
+  userId: string,
   bucketId: string,
   params: UpdateBudgetBucketParams
 ): Promise<BudgetBucket | null> => {
@@ -48,7 +48,7 @@ BudgetBucket.update = async (
   return row ? new BudgetBucket(row) : null;
 };
 
-BudgetBucket.initializeDefaults = async (userId: number): Promise<BudgetBucket[]> => {
+BudgetBucket.initializeDefaults = async (userId: string): Promise<BudgetBucket[]> => {
   const rows = await repo.initializeDefaultBuckets(userId);
   return rows.map(row => new BudgetBucket(row));
 };

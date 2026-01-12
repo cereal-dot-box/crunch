@@ -2,6 +2,9 @@ import cron, { ScheduledTask } from 'node-cron';
 import { EmailSyncService } from './sync.service';
 import { getEnv } from '../../config/env';
 import { db } from '../../lib/database';
+import { loggers } from '../../lib/logger';
+
+const log = loggers.scheduler;
 
 export class EmailSchedulerService {
   private syncService: EmailSyncService;
@@ -16,21 +19,21 @@ export class EmailSchedulerService {
     const env = getEnv();
 
     if (!env.EMAIL_SYNC_ENABLED) {
-      console.log('[EmailScheduler] Email sync is disabled in config');
+      log.info('Email sync is disabled in config');
       return;
     }
 
     const intervalMinutes = env.EMAIL_SYNC_INTERVAL_MINUTES || 5;
     const cronExpression = `*/${intervalMinutes} * * * *`;
 
-    console.log(`[EmailScheduler] Starting email sync scheduler (every ${intervalMinutes} minutes)`);
+    log.info({ intervalMinutes }, 'Starting email sync scheduler');
 
     // Main IMAP sync + processing task
     this.cronTask = cron.schedule(cronExpression, async () => {
       await this.runSync();
     });
 
-    console.log('[EmailScheduler] Scheduler started successfully');
+    log.info('Scheduler started successfully');
 
     // Run initial sync immediately
     await this.runSync();
@@ -40,31 +43,31 @@ export class EmailSchedulerService {
     if (this.cronTask) {
       this.cronTask.stop();
       this.cronTask = null;
-      console.log('[EmailScheduler] Sync scheduler stopped');
+      log.info('Sync scheduler stopped');
     }
   }
 
   private async runSync(): Promise<void> {
     // Prevent overlapping runs
     if (this.isRunning) {
-      console.log('[EmailScheduler] Sync already running, skipping this run');
+      log.debug('Sync already running, skipping this run');
       return;
     }
 
     this.isRunning = true;
 
     try {
-      console.log('[EmailScheduler] Starting scheduled sync...');
+      log.debug('Starting scheduled sync...');
 
       // Get all active sync sources
       const sources = await this.getAllActiveSyncSources();
 
       if (sources.length === 0) {
-        console.log('[EmailScheduler] No active sync sources found');
+        log.debug('No active sync sources found');
         return;
       }
 
-      console.log(`[EmailScheduler] Syncing ${sources.length} sync sources`);
+      log.info({ count: sources.length }, 'Syncing sync sources');
 
       // Sync each source individually
       for (const source of sources) {
@@ -74,20 +77,22 @@ export class EmailSchedulerService {
             source.user_id
           );
 
-          console.log(
-            `[EmailScheduler] Sync source ${source.id} (User ${source.user_id}): ` +
-            `${result.emailsFetched} fetched, ` +
-            `${result.jobsEnqueued} jobs enqueued, ` +
-            `${result.errors} errors (${result.duration}ms)`
-          );
+          log.info({
+            syncSourceId: source.id,
+            userId: source.user_id,
+            emailsFetched: result.emailsFetched,
+            jobsEnqueued: result.jobsEnqueued,
+            errors: result.errors,
+            durationMs: result.duration,
+          }, 'Sync source completed');
         } catch (error) {
-          console.error(`[EmailScheduler] Failed to sync sync source ${source.id}:`, error);
+          log.error({ err: error, syncSourceId: source.id }, 'Failed to sync sync source');
         }
       }
 
-      console.log('[EmailScheduler] Scheduled sync complete');
+      log.debug('Scheduled sync complete');
     } catch (error) {
-      console.error('[EmailScheduler] Sync error:', error);
+      log.error({ err: error }, 'Sync error');
     } finally {
       this.isRunning = false;
     }
@@ -111,7 +116,7 @@ export class EmailSchedulerService {
 
       return sources;
     } catch (error) {
-      console.error('[EmailScheduler] Error getting active sync sources:', error);
+      log.error({ err: error }, 'Error getting active sync sources');
       return [];
     }
   }
@@ -120,14 +125,13 @@ export class EmailSchedulerService {
    * Manually trigger a sync for a specific sync source
    */
   async triggerSync(syncSourceId: number, userId: number): Promise<void> {
-    console.log(`[EmailScheduler] Manually triggering sync for sync source ${syncSourceId}`);
+    log.info({ syncSourceId }, 'Manually triggering sync');
     const result = await this.syncService.syncAndProcessSyncSource(syncSourceId, userId);
-    console.log(
-      `[EmailScheduler] Manual sync complete: ` +
-      `${result.emailsFetched} fetched, ` +
-      `${result.jobsEnqueued} jobs enqueued, ` +
-      `${result.errors} errors`
-    );
+    log.info({
+      emailsFetched: result.emailsFetched,
+      jobsEnqueued: result.jobsEnqueued,
+      errors: result.errors,
+    }, 'Manual sync complete');
   }
 
   getStatus(): { running: boolean; scheduled: boolean } {

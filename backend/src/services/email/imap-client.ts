@@ -1,5 +1,8 @@
 import Imap from 'imap';
 import { simpleParser, ParsedMail } from 'mailparser';
+import { loggers } from '../../lib/logger';
+
+const log = loggers.imap;
 
 export interface ImapConfig {
   user: string;
@@ -45,7 +48,7 @@ export class ImapClient {
     });
 
     this.imap.on('error', (err: Error) => {
-      console.error('IMAP error:', err);
+      log.error({ err }, 'IMAP error');
       this.isConnected = false;
     });
   }
@@ -154,7 +157,7 @@ export class ImapClient {
                 htmlBody: parsed.html || undefined,
               });
             } catch (parseError) {
-              console.error(`Error parsing message ${seqno}:`, parseError);
+              log.error({ err: parseError, seqno }, 'Error parsing message');
             } finally {
               messagesProcessed++;
               if (messagesProcessed === messagesToProcess) {
@@ -165,7 +168,7 @@ export class ImapClient {
         });
 
         fetch.once('error', (err) => {
-          console.error(`[IMAP] Fetch error:`, err);
+          log.error({ err }, 'Fetch error');
           reject(err);
         });
       });
@@ -211,7 +214,7 @@ export class ImapClient {
               htmlBody: parsed.html || undefined,
             });
           } catch (parseError) {
-            console.error(`Error parsing message ${seqno}:`, parseError);
+            log.error({ err: parseError, seqno }, 'Error parsing message');
           } finally {
             pendingMessages.delete(seqno);
           }
@@ -248,14 +251,14 @@ export class ImapClient {
           return;
         }
 
-        console.log(`[IMAP] Found ${uids.length} total emails in folder`);
+        log.debug({ count: uids.length }, 'Found total emails in folder');
 
         // Filter UIDs to only include those after lastUid
         const filteredUids = lastUid
           ? uids.filter((uid) => uid > parseInt(lastUid))
           : uids;
 
-        console.log(`[IMAP] After filtering from UID ${lastUid || '0'}: ${filteredUids.length} emails to fetch`);
+        log.debug({ lastUid: lastUid || '0', count: filteredUids.length }, 'After filtering: emails to fetch');
 
         if (filteredUids.length === 0) {
           resolve([]);
@@ -269,7 +272,7 @@ export class ImapClient {
         let messagesProcessed = 0;
         let messagesToProcess = limitedUids.length;
 
-        console.log(`[IMAP] Fetching UIDs:`, limitedUids);
+        log.debug({ uids: limitedUids }, 'Fetching UIDs');
 
         const fetch = this.imap.fetch(limitedUids, {
           bodies: '',
@@ -277,7 +280,7 @@ export class ImapClient {
         });
 
         fetch.on('message', (msg, seqno) => {
-          console.log(`[IMAP] Received message event, seqno: ${seqno}`);
+          log.trace({ seqno }, 'Received message event');
           let uid = 0;
           let buffer = '';
 
@@ -303,13 +306,13 @@ export class ImapClient {
                 textBody: parsed.text || '',
                 htmlBody: parsed.html || undefined,
               });
-              console.log(`[IMAP] Parsed email UID ${uid}, total emails: ${emails.length}`);
+              log.trace({ uid, total: emails.length }, 'Parsed email');
             } catch (parseError) {
-              console.error(`Error parsing message ${seqno}:`, parseError);
+              log.error({ err: parseError, seqno }, 'Error parsing message');
             } finally {
               messagesProcessed++;
               if (messagesProcessed === messagesToProcess) {
-                console.log(`[IMAP] All messages processed, returning ${emails.length} emails`);
+                log.debug({ count: emails.length }, 'All messages processed');
                 resolve(emails);
               }
             }
@@ -317,7 +320,7 @@ export class ImapClient {
         });
 
         fetch.once('error', (err) => {
-          console.error(`[IMAP] Fetch error:`, err);
+          log.error({ err }, 'Fetch error');
           reject(err);
         });
       });
@@ -390,7 +393,7 @@ export class ImapClient {
                 });
               }
             } catch (parseError) {
-              console.error(`Error parsing message ${seqno}:`, parseError);
+              log.error({ err: parseError, seqno }, 'Error parsing message');
             } finally {
               pendingMessages.delete(seqno);
             }

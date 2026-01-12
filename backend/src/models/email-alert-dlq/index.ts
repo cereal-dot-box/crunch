@@ -22,30 +22,30 @@ export class EmailAlertDLQ {
     return { ...this.data };
   }
 
-  static getById: (id: number, userId: number) => Promise<EmailAlertDLQ | null>;
-  static getByMessageUid: (messageUid: string, userId: number) => Promise<EmailAlertDLQ | null>;
-  static getAll: (userId: number, limit?: number, offset?: number) => Promise<EmailAlertDLQ[]>;
-  static getMessageUids: (userId: number) => Promise<string[]>;
+  static getById: (id: number, userId: string) => Promise<EmailAlertDLQ | null>;
+  static getByMessageUid: (messageUid: string, userId: string) => Promise<EmailAlertDLQ | null>;
+  static getAll: (userId: string, limit?: number, offset?: number) => Promise<EmailAlertDLQ[]>;
+  static getMessageUids: (userId: string) => Promise<string[]>;
   static create: (params: CreateDLQEntryParams) => Promise<EmailAlertDLQRow>;
-  static delete: (id: number, userId: number) => Promise<void>;
+  static delete: (id: number, userId: string) => Promise<void>;
 }
 
 // Static factory methods
-EmailAlertDLQ.getById = async (id: number, userId: number): Promise<EmailAlertDLQ | null> => {
+EmailAlertDLQ.getById = async (id: number, userId: string): Promise<EmailAlertDLQ | null> => {
   const row = await repo.getDLQById(id, userId);
   return row ? new EmailAlertDLQ(row) : null;
 };
 
 EmailAlertDLQ.getByMessageUid = async (
   messageUid: string,
-  userId: number
+  userId: string
 ): Promise<EmailAlertDLQ | null> => {
   const row = await repo.getDLQByMessageUid(messageUid, userId);
   return row ? new EmailAlertDLQ(row) : null;
 };
 
 EmailAlertDLQ.getAll = async (
-  userId: number,
+  userId: string,
   limit?: number,
   offset?: number
 ): Promise<EmailAlertDLQ[]> => {
@@ -53,7 +53,7 @@ EmailAlertDLQ.getAll = async (
   return rows.map(row => new EmailAlertDLQ(row));
 };
 
-EmailAlertDLQ.getMessageUids = async (userId: number): Promise<string[]> => {
+EmailAlertDLQ.getMessageUids = async (userId: string): Promise<string[]> => {
   return await repo.getDLQMessageUids(userId);
 };
 
@@ -61,7 +61,7 @@ EmailAlertDLQ.create = async (params: CreateDLQEntryParams): Promise<EmailAlertD
   return await repo.createDLQEntry(params);
 };
 
-EmailAlertDLQ.delete = async (id: number, userId: number): Promise<void> => {
+EmailAlertDLQ.delete = async (id: number, userId: string): Promise<void> => {
   await repo.deleteDLQ(id, userId);
 };
 

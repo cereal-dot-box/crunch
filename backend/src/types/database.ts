@@ -1,7 +1,6 @@
 import type { ColumnType } from 'kysely';
 
 export interface Database {
-  User: UserTable;
   Session: SessionTable;
   Account: AccountTable;
   BudgetBucket: BudgetBucketTable;
@@ -13,16 +12,9 @@ export interface Database {
   MonthlyPeriod: MonthlyPeriodTable;
 }
 
-export interface UserTable {
-  id: ColumnType<number, never, never>;
-  email: string;
-  password_hash: string;
-  created_at: ColumnType<string, string | undefined, never>;
-}
-
 export interface SessionTable {
   id: string;
-  user_id: number;
+  user_id: string;
   data: string | null;
   created_at: ColumnType<string, string | undefined, never>;
   expires_at: string;
@@ -31,7 +23,7 @@ export interface SessionTable {
 
 export interface AccountTable {
   id: ColumnType<number, never, never>;
-  user_id: number;
+  user_id: string;
   name: string;
   bank: string | null;
   type: string | null;
@@ -44,7 +36,7 @@ export interface AccountTable {
 
 export interface BudgetBucketTable {
   id: ColumnType<number, never, never>;
-  user_id: number;
+  user_id: string;
   bucket_id: string;
   name: string;
   monthly_limit: number;
@@ -60,7 +52,7 @@ export interface BudgetBucketTable {
  */
 export interface ProcessedEmailsTable {
   id: ColumnType<number, never, never>;
-  user_id: number;
+  user_id: string;
   sync_source_id: number;
   message_uid: string;
   content_hash: string | null;
@@ -73,7 +65,7 @@ export interface ProcessedEmailsTable {
  */
 export interface EmailAlertDLQTable {
   id: ColumnType<number, never, never>;
-  user_id: number;
+  user_id: string;
   sync_source_id: number;
   message_uid: string | null;
   subject: string | null;
@@ -93,7 +85,7 @@ export interface EmailAlertDLQTable {
  */
 export interface BalanceUpdateTable {
   id: ColumnType<number, never, never>;
-  user_id: number;
+  user_id: string;
   account_id: number;
   processed_email_id: number | null;
   sync_source_id: number | null;
@@ -111,7 +103,7 @@ export interface BalanceUpdateTable {
  */
 export interface TransactionTable {
   id: ColumnType<number, never, never>;
-  user_id: number;
+  user_id: string;
   account_id: number;
   processed_email_id: number | null;
   sync_source_id: number | null;
@@ -158,7 +150,7 @@ export interface SyncSourceTable {
  */
 export interface MonthlyPeriodTable {
   id: ColumnType<number, never, never>;
-  user_id: number;
+  user_id: string;
   month: string; // YYYY-MM format
   projected_income: number; // What you expected
   actual_income: number; // What actually happened

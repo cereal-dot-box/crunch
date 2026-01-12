@@ -55,7 +55,7 @@ export class KyselySessionStore implements SessionStore {
       .insertInto('Session')
       .values({
         id: sessionId,
-        user_id: userId || 1,
+        user_id: userId || crypto.randomUUID(),
         data: JSON.stringify(session),
         expires_at: expiresAt,
       })

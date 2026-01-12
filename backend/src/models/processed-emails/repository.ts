@@ -68,7 +68,7 @@ export async function getProcessedEmailsCount(
  * Get processed emails for a user with pagination
  */
 export async function getProcessedEmailsByUserId(
-  userId: number,
+  userId: string,
   limit = 50,
   offset = 0
 ): Promise<ProcessedEmailsRow[]> {
@@ -87,7 +87,7 @@ export async function getProcessedEmailsByUserId(
  */
 export async function getProcessedEmailById(
   id: number,
-  userId: number
+  userId: string
 ): Promise<ProcessedEmailsRow | null> {
   const result = await db
     .selectFrom('ProcessedEmails')

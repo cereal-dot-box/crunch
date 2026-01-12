@@ -33,6 +33,7 @@ export function loadEnv(): Env {
     return env;
   } catch (error) {
     if (error instanceof z.ZodError) {
+      // Note: Can't use logger here due to circular dependency (logger needs env)
       console.error('Environment validation failed:');
       error.errors.forEach((err) => {
         console.error(`  ${err.path.join('.')}: ${err.message}`);

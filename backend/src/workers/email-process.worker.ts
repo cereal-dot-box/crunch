@@ -9,6 +9,9 @@ import { BalanceUpdate } from '../models/balance-update';
 import type { DLQErrorType } from '../models/email-alert-dlq';
 import type { EmailProcessJobData } from '../queues/job-types';
 import { QUEUE_NAMES } from '../queues/job-types';
+import { loggers } from '../lib/logger';
+
+const log = loggers.worker;
 
 /**
  * Process a single email from the queue
@@ -19,13 +22,13 @@ export async function processEmailJob(
 ): Promise<{ success: boolean; transactionCreated?: boolean; creditUpdate?: boolean; error?: string }> {
   const { syncSourceId, userId, message } = job.data;
 
-  console.log(`[Worker] Processing email ${message.uid} for sync source ${syncSourceId}`);
+  log.debug({ uid: message.uid, syncSourceId }, 'Processing email');
 
   try {
     // Check if already successfully processed
     const alreadyProcessed = await ProcessedEmail.isProcessed(syncSourceId, message.uid);
     if (alreadyProcessed) {
-      console.log(`[Worker] Email ${message.uid} already successfully processed, skipping`);
+      log.debug({ uid: message.uid }, 'Email already processed, skipping');
       return { success: true };
     }
 
@@ -87,12 +90,10 @@ export async function processEmailJob(
         name: transaction.merchant || 'Unknown Merchant',
         merchantName: transaction.merchant || null,
       };
-      console.log('[Worker] Creating transaction with params:', JSON.stringify(createParams, null, 2));
+      log.debug({ params: createParams }, 'Creating transaction');
       await Transaction.create(createParams);
 
-      console.log(
-        `[Worker] ✅ Created transaction: ${transaction.merchant} $${Math.abs(transaction.amount).toFixed(2)}`
-      );
+      log.info({ merchant: transaction.merchant, amount: Math.abs(transaction.amount).toFixed(2) }, 'Created transaction');
 
       return { success: true, transactionCreated: true };
     } else if (parseResult.type === 'credit_update') {
@@ -111,9 +112,7 @@ export async function processEmailJob(
         updateDate: message.date,
       });
 
-      console.log(
-        `[Worker] ✅ Updated credit: $${creditUpdate.availableCredit.toFixed(2)}`
-      );
+      log.info({ availableCredit: creditUpdate.availableCredit.toFixed(2) }, 'Updated credit');
 
       return { success: true, creditUpdate: true };
     }
@@ -128,7 +127,7 @@ export async function processEmailJob(
 
     if (attemptsMade >= maxAttempts) {
       // Create DLQ entry after all BullMQ retries are exhausted (for manual review)
-      console.log(`[Worker] Adding DLQ entry for failed email ${message.uid} (after ${attemptsMade} attempts)`);
+      log.warn({ uid: message.uid, attempts: attemptsMade }, 'Adding DLQ entry for failed email');
       try {
         await EmailAlertDLQ.create({
           userId,
@@ -143,12 +142,12 @@ export async function processEmailJob(
           errorType: 'PARSE_ERROR' as DLQErrorType,
           errorStack: error instanceof Error ? error.stack : undefined,
         });
-        console.log(`[Worker] ✅ DLQ entry created for email ${message.uid}`);
+        log.info({ uid: message.uid }, 'DLQ entry created');
       } catch (dlqError) {
-        console.error('[Worker] Failed to create DLQ entry:', dlqError);
+        log.error({ err: dlqError }, 'Failed to create DLQ entry');
       }
     } else {
-      console.log(`[Worker] Email ${message.uid} failed (attempt ${attemptsMade}/${maxAttempts}): ${errorMessage}`);
+      log.warn({ uid: message.uid, attempt: attemptsMade, maxAttempts, error: errorMessage }, 'Email processing failed');
     }
 
     // Throw the error so BullMQ can retry
@@ -179,18 +178,18 @@ export function createEmailProcessWorker(): Worker<EmailProcessJobData> {
   );
 
   worker.on('completed', (job, result) => {
-    console.log(`[Worker] Job ${job.id} completed:`, result);
+    log.debug({ jobId: job.id, result }, 'Job completed');
   });
 
   worker.on('failed', (job, err) => {
-    console.error(`[Worker] Job ${job?.id} failed:`, err.message);
+    log.error({ jobId: job?.id, error: err.message }, 'Job failed');
   });
 
   worker.on('error', (err) => {
-    console.error('[Worker] Worker error:', err);
+    log.error({ err }, 'Worker error');
   });
 
-  console.log('[Worker] Email process worker started');
+  log.info('Email process worker started');
 
   return worker;
 }

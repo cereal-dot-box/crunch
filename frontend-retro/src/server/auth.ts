@@ -3,6 +3,9 @@ import { getRequest, setCookie } from '@tanstack/react-start/server'
 import { z } from 'zod'
 import { zodValidator } from '@tanstack/zod-adapter'
 import { authClient } from '../lib/auth-client'
+import { loggers } from '../lib/logger'
+
+const log = loggers.auth
 
 const AUTH_URL = import.meta.env.VITE_AUTH_URL ?? 'http://localhost:4000'
 const FRONTEND_URL = import.meta.env.VITE_FRONTEND_URL ?? 'http://localhost:3000'
@@ -22,7 +25,7 @@ export const checkStatus = createServerFn({ method: 'GET' })
     const request = getRequest()
     const cookieHeader = request?.headers.get('cookie') || ''
 
-    console.log('[checkStatus] Cookie header received:', cookieHeader)
+    log.debug('checkStatus - Cookie header received:', cookieHeader)
 
     // Use Better Auth client to get session
     const { data, error } = await authClient.getSession({
@@ -33,7 +36,7 @@ export const checkStatus = createServerFn({ method: 'GET' })
       },
     })
 
-    console.log('[checkStatus] getSession result:', { data, error })
+    log.debug('checkStatus - getSession result:', { data, error })
 
     return {
       isSetup: true,
@@ -52,8 +55,7 @@ export const login = createServerFn({ method: 'POST' })
     const request = getRequest()
     const cookieHeader = request?.headers.get('cookie') || ''
 
-    console.log('=== [Login Start] ===')
-    console.log('[Login] Email:', data.email)
+    log.info('Login started for:', data.email)
 
     // Use Better Auth client
     const result = await authClient.signIn.email({
@@ -67,11 +69,11 @@ export const login = createServerFn({ method: 'POST' })
         onSuccess: (ctx) => {
           // Forward Set-Cookie headers from auth service to browser
           const setCookieHeader = ctx.response.headers.get('set-cookie')
-          console.log('[Login] Raw Set-Cookie header:', setCookieHeader)
+          log.debug('Raw Set-Cookie header:', setCookieHeader)
           if (setCookieHeader) {
             // Parse and forward each cookie
             for (const cookie of setCookieHeader.split(', ')) {
-              console.log('[Login] Parsing cookie:', cookie)
+              log.debug('Parsing cookie:', cookie)
               const [nameValue, ...attrs] = cookie.split('; ')
               const [name, ...valueParts] = nameValue.split('=')
               const value = decodeURIComponent(valueParts.join('='))
@@ -87,7 +89,7 @@ export const login = createServerFn({ method: 'POST' })
                 else if (lowerKey === 'path') options.path = val
               }
 
-              console.log('[Login] Setting cookie:', { name, value, options })
+              log.debug('Setting cookie:', { name, value: '***', options })
               setCookie(name, value, options)
             }
           }
@@ -96,17 +98,17 @@ export const login = createServerFn({ method: 'POST' })
     })
 
     if (result.error) {
-      console.log('[Login] ERROR:', result.error.message)
+      log.error('Login failed:', result.error.message)
       throw new Error(result.error.message || 'Login failed')
     }
 
-    console.log('[Login] Better Auth sign-in successful, userId:', result.data?.user?.id)
+    log.info('Login successful, userId:', result.data?.user?.id)
 
     // NOTE: We skip JWT fetch here because the session cookie hasn't propagated to browser yet.
     // The JWT will be fetched on-demand in graphql.ts when needed, using the valid session cookie.
     // This is actually more efficient - JWT is only fetched when GraphQL is actually used.
 
-    console.log('=== [Login End] ===')
+    log.debug('Login complete')
 
     return {
       message: 'Login successful',

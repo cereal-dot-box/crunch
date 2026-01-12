@@ -20,18 +20,18 @@ export class BalanceUpdate {
     return { ...this.data };
   }
 
-  static getByAccountId: (accountId: number, userId: number, limit?: number, offset?: number) => Promise<BalanceUpdate[]>;
-  static getByUserId: (userId: number, limit?: number, offset?: number) => Promise<BalanceUpdate[]>;
-  static getLatestForAccount: (accountId: number, userId: number, balanceType: 'available_balance' | 'current_balance') => Promise<BalanceUpdate | null>;
-  static getCurrent: (accountId: number, userId: number, balanceType?: 'available_balance' | 'current_balance') => Promise<number | null>;
+  static getByAccountId: (accountId: number, userId: string, limit?: number, offset?: number) => Promise<BalanceUpdate[]>;
+  static getByUserId: (userId: string, limit?: number, offset?: number) => Promise<BalanceUpdate[]>;
+  static getLatestForAccount: (accountId: number, userId: string, balanceType: 'available_balance' | 'current_balance') => Promise<BalanceUpdate | null>;
+  static getCurrent: (accountId: number, userId: string, balanceType?: 'available_balance' | 'current_balance') => Promise<number | null>;
   static create: (params: CreateBalanceUpdateParams) => Promise<BalanceUpdateRow>;
-  static deleteByAccountId: (accountId: number, userId: number) => Promise<void>;
+  static deleteByAccountId: (accountId: number, userId: string) => Promise<void>;
 }
 
 // Static factory methods
 BalanceUpdate.getByAccountId = async (
   accountId: number,
-  userId: number,
+  userId: string,
   limit?: number,
   offset?: number
 ): Promise<BalanceUpdate[]> => {
@@ -40,7 +40,7 @@ BalanceUpdate.getByAccountId = async (
 };
 
 BalanceUpdate.getByUserId = async (
-  userId: number,
+  userId: string,
   limit?: number,
   offset?: number
 ): Promise<BalanceUpdate[]> => {
@@ -50,7 +50,7 @@ BalanceUpdate.getByUserId = async (
 
 BalanceUpdate.getLatestForAccount = async (
   accountId: number,
-  userId: number,
+  userId: string,
   balanceType: 'available_balance' | 'current_balance'
 ): Promise<BalanceUpdate | null> => {
   const row = await repo.getLatestBalanceForAccount(accountId, userId, balanceType);
@@ -59,7 +59,7 @@ BalanceUpdate.getLatestForAccount = async (
 
 BalanceUpdate.getCurrent = async (
   accountId: number,
-  userId: number,
+  userId: string,
   balanceType?: 'available_balance' | 'current_balance'
 ): Promise<number | null> => {
   return await repo.getCurrentBalance(accountId, userId, balanceType);
@@ -69,7 +69,7 @@ BalanceUpdate.create = async (params: CreateBalanceUpdateParams): Promise<Balanc
   return await repo.createBalanceUpdate(params);
 };
 
-BalanceUpdate.deleteByAccountId = async (accountId: number, userId: number): Promise<void> => {
+BalanceUpdate.deleteByAccountId = async (accountId: number, userId: string): Promise<void> => {
   await repo.deleteBalanceUpdatesByAccountId(accountId, userId);
 };
 

@@ -2,6 +2,9 @@ import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { login as loginFn } from '../server/auth'
 import { Input, Button } from '../components/ui'
+import { loggers } from '../lib/logger'
+
+const log = loggers.auth
 
 export const Route = createFileRoute('/login')({
   beforeLoad: async ({ context }) => {
@@ -28,9 +31,9 @@ function LoginPage() {
 
     try {
       const result = await loginFn({ data: { email, password } })
-      console.log('Login successful:', result)
+      log.info('Login successful:', result)
       navigate({ to: '/' })
-      console.log('Navigation called')
+      log.debug('Navigation called')
     } catch (err: any) {
       const errorMessage =
         err?.message ||

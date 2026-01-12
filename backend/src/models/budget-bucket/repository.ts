@@ -1,7 +1,7 @@
 import { db } from '../../lib/database';
 import type { BudgetBucketRow, CreateBudgetBucketParams, UpdateBudgetBucketParams } from './types';
 
-export async function getBudgetBucketsByUserId(userId: number): Promise<BudgetBucketRow[]> {
+export async function getBudgetBucketsByUserId(userId: string): Promise<BudgetBucketRow[]> {
   return await db
     .selectFrom('BudgetBucket')
     .selectAll()
@@ -12,7 +12,7 @@ export async function getBudgetBucketsByUserId(userId: number): Promise<BudgetBu
 }
 
 export async function getBudgetBucket(
-  userId: number,
+  userId: string,
   bucketId: string
 ): Promise<BudgetBucketRow | undefined> {
   return await db
@@ -42,7 +42,7 @@ export async function createBudgetBucket(
 }
 
 export async function updateBudgetBucket(
-  userId: number,
+  userId: string,
   bucketId: string,
   params: UpdateBudgetBucketParams
 ): Promise<BudgetBucketRow | undefined> {
@@ -58,7 +58,7 @@ export async function updateBudgetBucket(
     .executeTakeFirst();
 }
 
-export async function initializeDefaultBuckets(userId: number): Promise<BudgetBucketRow[]> {
+export async function initializeDefaultBuckets(userId: string): Promise<BudgetBucketRow[]> {
   const { DEFAULT_BUDGETS } = await import('../../config/budgets');
 
   const buckets = DEFAULT_BUDGETS.map((bucket) => ({

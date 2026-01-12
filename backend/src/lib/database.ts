@@ -5,6 +5,7 @@ import * as path from 'path';
 import { promises as fs } from 'fs';
 import type { Database } from '../types/database';
 import { getEnv } from '../config/env';
+import { loggers } from './logger';
 
 const env = getEnv();
 
@@ -40,21 +41,21 @@ export async function connectDatabase() {
     const { error, results } = await migrator.migrateToLatest();
 
     if (error) {
-      console.error('Migration failed:', error);
+      loggers.database.error({ err: error }, 'Migration failed');
       process.exit(1);
     }
 
     results?.forEach((result) => {
       if (result.status === 'Success') {
-        console.log(`✓ Migration "${result.migrationName}" executed`);
+        loggers.database.info(`Migration "${result.migrationName}" executed`);
       } else if (result.status === 'Error') {
-        console.error(`✗ Migration "${result.migrationName}" failed`);
+        loggers.database.error(`Migration "${result.migrationName}" failed`);
       }
     });
 
-    console.log('Database connected');
+    loggers.database.info('Database connected');
   } catch (error) {
-    console.error('Database connection failed:', error);
+    loggers.database.error({ err: error }, 'Database connection failed');
     process.exit(1);
   }
 }

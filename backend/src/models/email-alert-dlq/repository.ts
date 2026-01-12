@@ -26,7 +26,7 @@ export async function createDLQEntry(params: CreateDLQEntryParams): Promise<Emai
 
 export async function getDLQById(
   id: number,
-  userId: number
+  userId: string
 ): Promise<EmailAlertDLQRow | undefined> {
   return await db
     .selectFrom('EmailAlertDLQ')
@@ -38,7 +38,7 @@ export async function getDLQById(
 
 export async function getDLQByMessageUid(
   messageUid: string,
-  userId: number
+  userId: string
 ): Promise<EmailAlertDLQRow | undefined> {
   return await db
     .selectFrom('EmailAlertDLQ')
@@ -49,7 +49,7 @@ export async function getDLQByMessageUid(
 }
 
 export async function getAllDLQItems(
-  userId: number,
+  userId: string,
   limit?: number,
   offset?: number
 ): Promise<EmailAlertDLQRow[]> {
@@ -70,7 +70,7 @@ export async function getAllDLQItems(
   return await query.execute();
 }
 
-export async function deleteDLQ(id: number, userId: number) {
+export async function deleteDLQ(id: number, userId: string) {
   return await db
     .deleteFrom('EmailAlertDLQ')
     .where('id', '=', id)
@@ -81,7 +81,7 @@ export async function deleteDLQ(id: number, userId: number) {
 /**
  * Get all message UIDs that have DLQ entries (for sync to skip)
  */
-export async function getDLQMessageUids(userId: number): Promise<string[]> {
+export async function getDLQMessageUids(userId: string): Promise<string[]> {
   const results = await db
     .selectFrom('EmailAlertDLQ')
     .select('message_uid')

@@ -19,20 +19,20 @@ export class Account {
     return { ...this.data };
   }
 
-  static getByUserId: (userId: number) => Promise<Account[]>;
-  static getById: (accountId: number, userId: number) => Promise<Account | null>;
+  static getByUserId: (userId: string) => Promise<Account[]>;
+  static getById: (accountId: number, userId: string) => Promise<Account | null>;
   static create: (params: CreateAccountParams) => Promise<AccountRow>;
-  static deactivate: (accountId: number, userId: number) => Promise<void>;
-  static update: (accountId: number, userId: number, updates: UpdateAccountParams) => Promise<void>;
+  static deactivate: (accountId: number, userId: string) => Promise<void>;
+  static update: (accountId: number, userId: string, updates: UpdateAccountParams) => Promise<void>;
 }
 
 // Static factory methods
-Account.getByUserId = async (userId: number): Promise<Account[]> => {
+Account.getByUserId = async (userId: string): Promise<Account[]> => {
   const rows = await repo.getAccountsByUserId(userId);
   return rows.map(row => new Account(row));
 };
 
-Account.getById = async (accountId: number, userId: number): Promise<Account | null> => {
+Account.getById = async (accountId: number, userId: string): Promise<Account | null> => {
   const row = await repo.getAccountById(accountId, userId);
   return row ? new Account(row) : null;
 };
@@ -41,11 +41,11 @@ Account.create = async (params: CreateAccountParams): Promise<AccountRow> => {
   return await repo.createAccount(params);
 };
 
-Account.deactivate = async (accountId: number, userId: number): Promise<void> => {
+Account.deactivate = async (accountId: number, userId: string): Promise<void> => {
   await repo.deactivateAccount(accountId, userId);
 };
 
-Account.update = async (accountId: number, userId: number, updates: UpdateAccountParams): Promise<void> => {
+Account.update = async (accountId: number, userId: string, updates: UpdateAccountParams): Promise<void> => {
   await repo.updateAccount(accountId, userId, updates);
 };
 

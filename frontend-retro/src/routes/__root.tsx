@@ -6,10 +6,13 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import appCss from '../styles.css?url'
 import { authQuery } from '../lib/authQuery'
 import { queryClient } from '../router'
+import { loggers } from '../lib/logger'
+
+const log = loggers.router
 
 export const Route = createRootRoute({
   beforeLoad: async ({ context }) => {
-    console.log('[__root] beforeLoad starting')
+    log.debug('beforeLoad starting')
     try {
       // Check cache first, only fetch if not cached
       let auth = context.queryClient.getQueryData(authQuery.queryKey)
@@ -19,10 +22,10 @@ export const Route = createRootRoute({
         auth = await context.queryClient.fetchQuery(authQuery)
       }
 
-      console.log('[__root] auth result:', auth)
+      log.debug('auth result:', auth)
       return { auth }
     } catch (error) {
-      console.error('[__root] auth error:', error)
+      log.error('auth error:', error)
       throw error
     }
   },

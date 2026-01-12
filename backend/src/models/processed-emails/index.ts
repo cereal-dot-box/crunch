@@ -16,10 +16,10 @@ export class ProcessedEmail {
   }
 
   static isProcessed: (syncSourceId: number, messageUid: string) => Promise<boolean>;
-  static mark: (params: { userId: number; syncSourceId: number; messageUid: string; contentHash?: string }) => Promise<ProcessedEmail>;
+  static mark: (params: { userId: string; syncSourceId: number; messageUid: string; contentHash?: string }) => Promise<ProcessedEmail>;
   static count: (syncSourceId: number) => Promise<number>;
-  static getByUserId: (userId: number, limit?: number, offset?: number) => Promise<ProcessedEmail[]>;
-  static getById: (id: number, userId: number) => Promise<ProcessedEmail | null>;
+  static getByUserId: (userId: string, limit?: number, offset?: number) => Promise<ProcessedEmail[]>;
+  static getById: (id: number, userId: string) => Promise<ProcessedEmail | null>;
   static getMessageUids: (syncSourceId: number) => Promise<string[]>;
 }
 
@@ -41,7 +41,7 @@ ProcessedEmail.count = async (syncSourceId: number): Promise<number> => {
 };
 
 ProcessedEmail.getByUserId = async (
-  userId: number,
+  userId: string,
   limit?: number,
   offset?: number
 ): Promise<ProcessedEmail[]> => {
@@ -49,7 +49,7 @@ ProcessedEmail.getByUserId = async (
   return rows.map(row => new ProcessedEmail(row));
 };
 
-ProcessedEmail.getById = async (id: number, userId: number): Promise<ProcessedEmail | null> => {
+ProcessedEmail.getById = async (id: number, userId: string): Promise<ProcessedEmail | null> => {
   const row = await repo.getProcessedEmailById(id, userId);
   return row ? new ProcessedEmail(row) : null;
 };

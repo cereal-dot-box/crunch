@@ -1,5 +1,6 @@
 import Redis from 'ioredis';
 import { getEnv } from './env';
+import { loggers } from '../lib/logger';
 
 let redisInstance: Redis | null = null;
 
@@ -24,19 +25,19 @@ export function getRedis(): Redis {
     });
 
     redisInstance.on('error', (err) => {
-      console.error('[Redis] Connection error:', err);
+      loggers.redis.error({ err }, 'Connection error');
     });
 
     redisInstance.on('connect', () => {
-      console.log('[Redis] Connected');
+      loggers.redis.info('Connected');
     });
 
     redisInstance.on('disconnect', () => {
-      console.warn('[Redis] Disconnected');
+      loggers.redis.warn('Disconnected');
     });
 
     redisInstance.on('ready', () => {
-      console.log('[Redis] Ready');
+      loggers.redis.info('Ready');
     });
   }
 
@@ -50,7 +51,7 @@ export async function closeRedis(): Promise<void> {
   if (redisInstance) {
     await redisInstance.quit();
     redisInstance = null;
-    console.log('[Redis] Connection closed');
+    loggers.redis.info('Connection closed');
   }
 }
 
@@ -63,7 +64,7 @@ export async function checkRedisHealth(): Promise<boolean> {
     const result = await redis.ping();
     return result === 'PONG';
   } catch (error) {
-    console.error('[Redis] Health check failed:', error);
+    loggers.redis.error({ err: error }, 'Health check failed');
     return false;
   }
 }

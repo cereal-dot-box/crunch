@@ -1,11 +1,14 @@
 import type { FastifyError, FastifyRequest, FastifyReply } from 'fastify';
+import { loggers } from '../lib/logger';
+
+const log = loggers.http;
 
 export function errorHandler(
   error: FastifyError,
   request: FastifyRequest,
   reply: FastifyReply
 ): void {
-  console.error('Error:', error);
+  log.error({ err: error }, 'Request error');
 
   const statusCode = error.statusCode || 500;
   const message = error.message || 'Internal Server Error';

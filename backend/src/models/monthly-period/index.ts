@@ -2,14 +2,14 @@ import * as repo from './repository';
 import type { MonthlyPeriodRow, CreateMonthlyPeriodParams, UpdateMonthlyPeriodParams } from './types';
 
 export class MonthlyPeriod {
-  static getByUserId: (userId: number) => Promise<MonthlyPeriod[]>;
-  static getByMonth: (userId: number, month: string) => Promise<MonthlyPeriod | null>;
-  static getById: (id: number, userId: number) => Promise<MonthlyPeriod | null>;
+  static getByUserId: (userId: string) => Promise<MonthlyPeriod[]>;
+  static getByMonth: (userId: string, month: string) => Promise<MonthlyPeriod | null>;
+  static getById: (id: number, userId: string) => Promise<MonthlyPeriod | null>;
   static create: (params: CreateMonthlyPeriodParams) => Promise<MonthlyPeriodRow>;
-  static update: (id: number, userId: number, params: UpdateMonthlyPeriodParams) => Promise<MonthlyPeriod | null>;
-  static close: (id: number, userId: number) => Promise<MonthlyPeriod | null>;
-  static delete: (id: number, userId: number) => Promise<void>;
-  static getOpen: (userId: number) => Promise<MonthlyPeriod | null>;
+  static update: (id: number, userId: string, params: UpdateMonthlyPeriodParams) => Promise<MonthlyPeriod | null>;
+  static close: (id: number, userId: string) => Promise<MonthlyPeriod | null>;
+  static delete: (id: number, userId: string) => Promise<void>;
+  static getOpen: (userId: string) => Promise<MonthlyPeriod | null>;
   constructor(private data: MonthlyPeriodRow) {}
 
   get id() { return this.data.id; }
@@ -35,17 +35,17 @@ export class MonthlyPeriod {
 }
 
 // Static factory methods
-MonthlyPeriod.getByUserId = async (userId: number): Promise<MonthlyPeriod[]> => {
+MonthlyPeriod.getByUserId = async (userId: string): Promise<MonthlyPeriod[]> => {
   const rows = await repo.getMonthlyPeriodsByUserId(userId);
   return rows.map(row => new MonthlyPeriod(row));
 };
 
-MonthlyPeriod.getByMonth = async (userId: number, month: string): Promise<MonthlyPeriod | null> => {
+MonthlyPeriod.getByMonth = async (userId: string, month: string): Promise<MonthlyPeriod | null> => {
   const row = await repo.getMonthlyPeriod(userId, month);
   return row ? new MonthlyPeriod(row) : null;
 };
 
-MonthlyPeriod.getById = async (id: number, userId: number): Promise<MonthlyPeriod | null> => {
+MonthlyPeriod.getById = async (id: number, userId: string): Promise<MonthlyPeriod | null> => {
   const row = await repo.getMonthlyPeriodById(id, userId);
   return row ? new MonthlyPeriod(row) : null;
 };
@@ -61,23 +61,23 @@ MonthlyPeriod.create = async (params: CreateMonthlyPeriodParams): Promise<Monthl
 
 MonthlyPeriod.update = async (
   id: number,
-  userId: number,
+  userId: string,
   params: UpdateMonthlyPeriodParams
 ): Promise<MonthlyPeriod | null> => {
   const row = await repo.updateMonthlyPeriod(id, userId, params);
   return row ? new MonthlyPeriod(row) : null;
 };
 
-MonthlyPeriod.close = async (id: number, userId: number): Promise<MonthlyPeriod | null> => {
+MonthlyPeriod.close = async (id: number, userId: string): Promise<MonthlyPeriod | null> => {
   const row = await repo.closeMonthlyPeriod(id, userId);
   return row ? new MonthlyPeriod(row) : null;
 };
 
-MonthlyPeriod.delete = async (id: number, userId: number): Promise<void> => {
+MonthlyPeriod.delete = async (id: number, userId: string): Promise<void> => {
   await repo.deleteMonthlyPeriod(id, userId);
 };
 
-MonthlyPeriod.getOpen = async (userId: number): Promise<MonthlyPeriod | null> => {
+MonthlyPeriod.getOpen = async (userId: string): Promise<MonthlyPeriod | null> => {
   const row = await repo.getOpenMonthlyPeriod(userId);
   return row ? new MonthlyPeriod(row) : null;
 };

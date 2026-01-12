@@ -1,5 +1,8 @@
 import { TransactionParser } from '../../../transaction-parser';
 import { ParsedTransaction, EmailMessage } from '../../../base-parser';
+import { loggers } from '../../../../lib/logger';
+
+const log = loggers.parser;
 
 // TODO: fix this up
 
@@ -32,44 +35,44 @@ export class RbcChequingTransactionParser extends TransactionParser {
     // Check if email is from RBC or contains RBC in forwarded headers
     const fromMatch = email.from_address.toLowerCase().includes(this.FROM_ADDRESS) ||
                       email.body_text.toLowerCase().includes(this.FROM_ADDRESS);
-    console.log('[RBC Parser] fromMatch:', fromMatch, 'from_address:', email.from_address);
+    log.debug({ fromMatch, from_address: email.from_address }, 'RBC Parser: checking from address');
     if (!fromMatch) {
       return false;
     }
 
     // Check if body contains deposit or withdrawal pattern
     const body = this.extractEmailBody(email);
-    console.log('[RBC Parser] Body preview (first 300 chars):', body.substring(0, 300));
+    log.trace({ bodyPreview: body.substring(0, 300) }, 'RBC Parser: body preview');
 
     const depositMatch = this.DEPOSIT_PATTERN.test(body);
     const withdrawalMatch = this.WITHDRAWAL_PATTERN.test(body);
-    console.log('[RBC Parser] depositMatch:', depositMatch, 'withdrawalMatch:', withdrawalMatch);
+    log.debug({ depositMatch, withdrawalMatch }, 'RBC Parser: pattern matching');
 
     return depositMatch || withdrawalMatch;
   }
 
   parse(email: EmailMessage): { type: 'transaction'; data: ParsedTransaction } | null {
     if (!this.canParse(email)) {
-      console.log('[RBC Parser] canParse returned false');
+      log.debug('RBC Parser: canParse returned false');
       return null;
     }
 
     const body = this.extractEmailBody(email);
-    console.log('[RBC Parser] Body preview:', body.substring(0, 500));
+    log.trace({ bodyPreview: body.substring(0, 500) }, 'RBC Parser: body preview for parsing');
 
     const isDeposit = this.DEPOSIT_PATTERN.test(body);
-    console.log('[RBC Parser] isDeposit:', isDeposit);
+    log.debug({ isDeposit }, 'RBC Parser: transaction type');
 
     const pattern = isDeposit ? this.DEPOSIT_PATTERN : this.WITHDRAWAL_PATTERN;
 
     const match = body.match(pattern);
     if (!match) {
-      console.log('[RBC Parser] Pattern match failed for', isDeposit ? 'deposit' : 'withdrawal');
+      log.warn({ type: isDeposit ? 'deposit' : 'withdrawal' }, 'RBC Parser: pattern match failed');
       return null;
     }
 
     const [, amountStr, accountLast4, dateStr] = match;
-    console.log('[RBC Parser] Parsed - amount:', amountStr, 'accountLast4:', accountLast4, 'dateStr:', dateStr);
+    log.debug({ amount: amountStr, accountLast4, dateStr }, 'RBC Parser: parsed values');
 
     // Parse amount
     const rawAmount = this.parseAmount(amountStr);

@@ -1,7 +1,7 @@
 import { db } from '../../lib/database';
 import type { MonthlyPeriodRow, CreateMonthlyPeriodParams, UpdateMonthlyPeriodParams } from './types';
 
-export async function getMonthlyPeriodsByUserId(userId: number): Promise<MonthlyPeriodRow[]> {
+export async function getMonthlyPeriodsByUserId(userId: string): Promise<MonthlyPeriodRow[]> {
   return await db
     .selectFrom('MonthlyPeriod')
     .selectAll()
@@ -11,7 +11,7 @@ export async function getMonthlyPeriodsByUserId(userId: number): Promise<Monthly
 }
 
 export async function getMonthlyPeriod(
-  userId: number,
+  userId: string,
   month: string
 ): Promise<MonthlyPeriodRow | undefined> {
   return await db
@@ -24,7 +24,7 @@ export async function getMonthlyPeriod(
 
 export async function getMonthlyPeriodById(
   id: number,
-  userId: number
+  userId: string
 ): Promise<MonthlyPeriodRow | undefined> {
   return await db
     .selectFrom('MonthlyPeriod')
@@ -57,7 +57,7 @@ export async function createMonthlyPeriod(
 
 export async function updateMonthlyPeriod(
   id: number,
-  userId: number,
+  userId: string,
   params: UpdateMonthlyPeriodParams
 ): Promise<MonthlyPeriodRow | undefined> {
   const updateValues: Record<string, any> = {
@@ -88,7 +88,7 @@ export async function updateMonthlyPeriod(
 
 export async function closeMonthlyPeriod(
   id: number,
-  userId: number
+  userId: string
 ): Promise<MonthlyPeriodRow | undefined> {
   return await db
     .updateTable('MonthlyPeriod')
@@ -104,7 +104,7 @@ export async function closeMonthlyPeriod(
 
 export async function deleteMonthlyPeriod(
   id: number,
-  userId: number
+  userId: string
 ): Promise<void> {
   await db
     .deleteFrom('MonthlyPeriod')
@@ -113,7 +113,7 @@ export async function deleteMonthlyPeriod(
     .execute();
 }
 
-export async function getOpenMonthlyPeriod(userId: number): Promise<MonthlyPeriodRow | undefined> {
+export async function getOpenMonthlyPeriod(userId: string): Promise<MonthlyPeriodRow | undefined> {
   return await db
     .selectFrom('MonthlyPeriod')
     .selectAll()
