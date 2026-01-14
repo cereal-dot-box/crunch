@@ -11,7 +11,6 @@ interface AddProviderModalProps {
 export function AddProviderModal({ accountId, onClose, onSuccess }: AddProviderModalProps) {
   const [formData, setFormData] = useState({
     name: '',
-    type: '' as '' | 'balance' | 'transactions',
     email_address: '',
     imap_host: '',
     imap_port: 993,
@@ -42,39 +41,20 @@ export function AddProviderModal({ accountId, onClose, onSuccess }: AddProviderM
         <div className="p-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Add Provider</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Provider Name
-                </label>
-                <input
-                  type="text"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  placeholder="e.g., BMO"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Type
-                </label>
-                <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md h-[42px]"
-                  value={formData.type}
-                  onChange={(e) =>
-                    setFormData({ ...formData, type: e.target.value as 'balance' | 'transactions' })
-                  }
-                  required
-                >
-                  <option value="">Select type...</option>
-                  <option value="transactions">Transactions</option>
-                  <option value="balance">Balance</option>
-                </select>
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Provider Name
+              </label>
+              <input
+                type="text"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                placeholder="e.g., BMO"
+                required
+              />
             </div>
 
             <div>

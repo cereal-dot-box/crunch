@@ -15,7 +15,9 @@ import { Route as LogoutRouteImport } from './routes/logout'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ProtectedRouteImport } from './routes/_protected'
 import { Route as ProtectedIndexRouteImport } from './routes/_protected/index'
+import { Route as ProtectedOutgoingRouteImport } from './routes/_protected/outgoing'
 import { Route as ProtectedMonthlyRouteImport } from './routes/_protected/monthly'
+import { Route as ProtectedIncomeRouteImport } from './routes/_protected/income'
 import { Route as ProtectedAccountsRouteImport } from './routes/_protected/accounts'
 import { Route as ProtectedBucketBucketIdRouteImport } from './routes/_protected/bucket/$bucketId'
 import { Route as ProtectedAccountAccountIdRouteImport } from './routes/_protected/account/$accountId'
@@ -49,9 +51,19 @@ const ProtectedIndexRoute = ProtectedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => ProtectedRoute,
 } as any)
+const ProtectedOutgoingRoute = ProtectedOutgoingRouteImport.update({
+  id: '/outgoing',
+  path: '/outgoing',
+  getParentRoute: () => ProtectedRoute,
+} as any)
 const ProtectedMonthlyRoute = ProtectedMonthlyRouteImport.update({
   id: '/monthly',
   path: '/monthly',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedIncomeRoute = ProtectedIncomeRouteImport.update({
+  id: '/income',
+  path: '/income',
   getParentRoute: () => ProtectedRoute,
 } as any)
 const ProtectedAccountsRoute = ProtectedAccountsRouteImport.update({
@@ -77,7 +89,9 @@ export interface FileRoutesByFullPath {
   '/register': typeof RegisterRoute
   '/setup': typeof SetupRoute
   '/accounts': typeof ProtectedAccountsRoute
+  '/income': typeof ProtectedIncomeRoute
   '/monthly': typeof ProtectedMonthlyRoute
+  '/outgoing': typeof ProtectedOutgoingRoute
   '/': typeof ProtectedIndexRoute
   '/account/$accountId': typeof ProtectedAccountAccountIdRoute
   '/bucket/$bucketId': typeof ProtectedBucketBucketIdRoute
@@ -88,7 +102,9 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/setup': typeof SetupRoute
   '/accounts': typeof ProtectedAccountsRoute
+  '/income': typeof ProtectedIncomeRoute
   '/monthly': typeof ProtectedMonthlyRoute
+  '/outgoing': typeof ProtectedOutgoingRoute
   '/': typeof ProtectedIndexRoute
   '/account/$accountId': typeof ProtectedAccountAccountIdRoute
   '/bucket/$bucketId': typeof ProtectedBucketBucketIdRoute
@@ -101,7 +117,9 @@ export interface FileRoutesById {
   '/register': typeof RegisterRoute
   '/setup': typeof SetupRoute
   '/_protected/accounts': typeof ProtectedAccountsRoute
+  '/_protected/income': typeof ProtectedIncomeRoute
   '/_protected/monthly': typeof ProtectedMonthlyRoute
+  '/_protected/outgoing': typeof ProtectedOutgoingRoute
   '/_protected/': typeof ProtectedIndexRoute
   '/_protected/account/$accountId': typeof ProtectedAccountAccountIdRoute
   '/_protected/bucket/$bucketId': typeof ProtectedBucketBucketIdRoute
@@ -114,7 +132,9 @@ export interface FileRouteTypes {
     | '/register'
     | '/setup'
     | '/accounts'
+    | '/income'
     | '/monthly'
+    | '/outgoing'
     | '/'
     | '/account/$accountId'
     | '/bucket/$bucketId'
@@ -125,7 +145,9 @@ export interface FileRouteTypes {
     | '/register'
     | '/setup'
     | '/accounts'
+    | '/income'
     | '/monthly'
+    | '/outgoing'
     | '/'
     | '/account/$accountId'
     | '/bucket/$bucketId'
@@ -137,7 +159,9 @@ export interface FileRouteTypes {
     | '/register'
     | '/setup'
     | '/_protected/accounts'
+    | '/_protected/income'
     | '/_protected/monthly'
+    | '/_protected/outgoing'
     | '/_protected/'
     | '/_protected/account/$accountId'
     | '/_protected/bucket/$bucketId'
@@ -195,11 +219,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedIndexRouteImport
       parentRoute: typeof ProtectedRoute
     }
+    '/_protected/outgoing': {
+      id: '/_protected/outgoing'
+      path: '/outgoing'
+      fullPath: '/outgoing'
+      preLoaderRoute: typeof ProtectedOutgoingRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
     '/_protected/monthly': {
       id: '/_protected/monthly'
       path: '/monthly'
       fullPath: '/monthly'
       preLoaderRoute: typeof ProtectedMonthlyRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/income': {
+      id: '/_protected/income'
+      path: '/income'
+      fullPath: '/income'
+      preLoaderRoute: typeof ProtectedIncomeRouteImport
       parentRoute: typeof ProtectedRoute
     }
     '/_protected/accounts': {
@@ -228,7 +266,9 @@ declare module '@tanstack/react-router' {
 
 interface ProtectedRouteChildren {
   ProtectedAccountsRoute: typeof ProtectedAccountsRoute
+  ProtectedIncomeRoute: typeof ProtectedIncomeRoute
   ProtectedMonthlyRoute: typeof ProtectedMonthlyRoute
+  ProtectedOutgoingRoute: typeof ProtectedOutgoingRoute
   ProtectedIndexRoute: typeof ProtectedIndexRoute
   ProtectedAccountAccountIdRoute: typeof ProtectedAccountAccountIdRoute
   ProtectedBucketBucketIdRoute: typeof ProtectedBucketBucketIdRoute
@@ -236,7 +276,9 @@ interface ProtectedRouteChildren {
 
 const ProtectedRouteChildren: ProtectedRouteChildren = {
   ProtectedAccountsRoute: ProtectedAccountsRoute,
+  ProtectedIncomeRoute: ProtectedIncomeRoute,
   ProtectedMonthlyRoute: ProtectedMonthlyRoute,
+  ProtectedOutgoingRoute: ProtectedOutgoingRoute,
   ProtectedIndexRoute: ProtectedIndexRoute,
   ProtectedAccountAccountIdRoute: ProtectedAccountAccountIdRoute,
   ProtectedBucketBucketIdRoute: ProtectedBucketBucketIdRoute,

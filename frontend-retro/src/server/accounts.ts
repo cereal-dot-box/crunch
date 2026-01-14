@@ -105,7 +105,6 @@ export const getProviders = createServerFn({ method: 'GET' })
           id
           account_id
           name
-          type
           email_address
           imap_host
           imap_port
@@ -142,7 +141,6 @@ export const getAvailableBankTypes = createServerFn({ method: 'GET' })
 export const addSyncSource = createServerFn({ method: 'POST' })
   .inputValidator(zodValidator(z.object({
     account_id: z.number(),
-    type: z.string(),
     name: z.string(),
     email_address: z.string(),
     imap_host: z.string(),
@@ -161,7 +159,6 @@ export const addSyncSource = createServerFn({ method: 'POST' })
           id
           account_id
           name
-          type
           email_address
           imap_host
           imap_port
@@ -186,7 +183,6 @@ export const updateSyncSource = createServerFn({ method: 'POST' })
     id: z.number(),
     input: z.object({
       name: z.string().optional(),
-      type: z.string().optional(),
       email_address: z.string().optional(),
       imap_host: z.string().optional(),
       imap_port: z.number().optional(),
@@ -205,7 +201,6 @@ export const updateSyncSource = createServerFn({ method: 'POST' })
           id
           account_id
           name
-          type
           email_address
           imap_host
           imap_port

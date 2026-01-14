@@ -38,18 +38,7 @@ export async function processEmailJob(
       throw new Error(`Sync source ${syncSourceId} not found`);
     }
 
-    // Get parser directly by bank, accountType, and syncSourceType
-    const parserService = getEmailParserService();
-    const parser = parserService.getParserFor(
-      source.bank ?? '',
-      source.accountType ?? '',
-      source.type
-    );
-
-    if (!parser) {
-      throw new Error(`No parser available for ${source.bank}:${source.accountType}:${source.type}`);
-    }
-
+    // Create email data object for parser detection
     const emailData = {
       message_uid: message.uid,
       subject: message.subject,
@@ -63,13 +52,42 @@ export async function processEmailJob(
       created_at: message.date,
     };
 
+    // Use content-based parser detection
+    const parserService = getEmailParserService();
+    const parser = parserService.getParser(emailData);
+
+    if (!parser) {
+      console.log(message.bodyText)
+      throw new Error(`No parser available for this email type`);
+    }
+
     const parseResult = parser.parse(emailData);
 
     if (!parseResult) {
-      throw new Error(`Parser failed for ${source.bank}:${source.accountType}:${source.type}`);
+      throw new Error(`Parser failed for ${source.bank}:${source.accountType}`);
     }
 
-    // Mark email as processed ONLY on success
+    // Handle unhandled email types by adding to DLQ
+    if (parseResult.type === 'payment' || parseResult.type === 'unknown') {
+      log.warn({ uid: message.uid, type: parseResult.type }, 'Unhandled email type, adding to DLQ');
+      await EmailAlertDLQ.create({
+        userId,
+        syncSourceId,
+        messageUid: message.uid,
+        subject: message.subject,
+        fromAddress: message.from,
+        date: message.date,
+        bodyText: message.bodyText,
+        bodyHtml: message.bodyHtml,
+        errorMessage: `Unhandled email type: ${parseResult.type}`,
+        errorType: 'UNSUPPORTED_TYPE' as DLQErrorType,
+        errorStack: undefined,
+      });
+      log.info({ uid: message.uid, type: parseResult.type }, 'DLQ entry created for unhandled type');
+      return { success: true };
+    }
+
+    // Mark email as processed ONLY on success (for handled types)
     const processedEmail = await ProcessedEmail.mark({
       userId,
       syncSourceId,

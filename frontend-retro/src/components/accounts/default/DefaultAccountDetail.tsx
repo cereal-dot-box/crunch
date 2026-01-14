@@ -19,10 +19,6 @@ export function DefaultAccountDetail({ account, syncSources = [], onDelete, dele
   const hasBalance = account.available_balance !== null && account.available_balance !== undefined;
   const hasCurrentBalance = account.current_balance !== null && account.current_balance !== undefined;
 
-  // Group sync sources by type
-  const balanceSyncSources = syncSources.filter(s => s.type === 'balance');
-  const transactionSyncSources = syncSources.filter(s => s.type === 'transactions');
-
   return (
     <>
       {/* Header */}
@@ -60,7 +56,7 @@ export function DefaultAccountDetail({ account, syncSources = [], onDelete, dele
                 <dd className="text-lg font-semibold text-gray-900">
                   ${account.current_balance?.toFixed(2)}
                 </dd>
-              ) : balanceSyncSources.length === 0 ? (
+              ) : syncSources.length === 0 ? (
                 <dd className="flex-1 flex justify-end">
                   <div className="border-2 border-dashed border-gray-300 rounded-lg px-2 py-1.5 text-center hover:border-indigo-400 hover:bg-indigo-50/30 transition-colors cursor-pointer" onClick={onAddSyncSource}>
                     <div className="flex items-center gap-1.5">
@@ -81,7 +77,7 @@ export function DefaultAccountDetail({ account, syncSources = [], onDelete, dele
                 <dd className="text-lg font-semibold text-green-600">
                   ${account.available_balance?.toFixed(2)}
                 </dd>
-              ) : balanceSyncSources.length === 0 ? (
+              ) : syncSources.length === 0 ? (
                 <dd className="flex-1 flex justify-end">
                   <div className="border-2 border-dashed border-gray-300 rounded-lg px-2 py-1.5 text-center hover:border-indigo-400 hover:bg-indigo-50/30 transition-colors cursor-pointer" onClick={onAddSyncSource}>
                     <div className="flex items-center gap-1.5">
@@ -104,8 +100,8 @@ export function DefaultAccountDetail({ account, syncSources = [], onDelete, dele
           <Card>
             <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Transactions</h3>
             {transactions.length > 0 ? (
-              <div className="space-y-3">
-                {transactions.slice(0, 10).map((tx) => (
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {transactions.map((tx) => (
                   <div
                     key={tx.transaction_id}
                     className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0"
@@ -125,9 +121,9 @@ export function DefaultAccountDetail({ account, syncSources = [], onDelete, dele
             ) : (
               <div className="text-center py-10 px-4">
                 <p className="text-gray-500 text-sm mb-4">
-                  {transactionSyncSources.length === 0 ? 'No transactions found' : 'No transactions synced yet'}
+                  {syncSources.length === 0 ? 'No transactions found' : 'No transactions synced yet'}
                 </p>
-                {onAddSyncSource && transactionSyncSources.length === 0 && (
+                {onAddSyncSource && syncSources.length === 0 && (
                   <div className="inline-block border-2 border-dashed border-gray-300 rounded-lg px-3 py-2 hover:border-indigo-400 hover:bg-indigo-50/30 transition-colors cursor-pointer" onClick={onAddSyncSource}>
                     <div className="flex items-center gap-1.5">
                       <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -157,7 +153,7 @@ export function DefaultAccountDetail({ account, syncSources = [], onDelete, dele
             </div>
           ) : (
             <div className="space-y-3">
-              {balanceSyncSources.map((syncSource) => (
+              {syncSources.map((syncSource) => (
                 <div key={syncSource.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
                   <div className="flex items-center gap-3 flex-1">
                     {onRefreshSyncSource && (
@@ -182,7 +178,7 @@ export function DefaultAccountDetail({ account, syncSources = [], onDelete, dele
                     <div className="flex-1 space-y-1">
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-medium text-gray-900">{syncSource.name}</p>
-                        <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">Balance</span>
+                        <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full">Sync Source</span>
                       </div>
                       <p className="text-xs text-gray-500">{syncSource.email_address}</p>
                     </div>
@@ -190,7 +186,7 @@ export function DefaultAccountDetail({ account, syncSources = [], onDelete, dele
                   <div className="flex items-center gap-4">
                     <div className="text-right space-y-1">
                       <p className="text-xs text-gray-500">
-                        {syncSource.balance_count} balance{syncSource.balance_count !== 1 ? 's' : ''}
+                        {syncSource.balance_count} balance{syncSource.balance_count !== 1 ? 's' : ''} • {syncSource.transaction_count} transaction{syncSource.transaction_count !== 1 ? 's' : ''}
                       </p>
                       <p className="text-xs text-gray-400">
                         Last sync: {syncSource.last_synced_at ? new Date(syncSource.last_synced_at).toLocaleDateString() : 'Never'}
@@ -211,68 +207,7 @@ export function DefaultAccountDetail({ account, syncSources = [], onDelete, dele
                   </div>
                 </div>
               ))}
-              {transactionSyncSources.map((syncSource) => (
-                <div key={syncSource.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
-                  <div className="flex items-center gap-3 flex-1">
-                    {onRefreshSyncSource && (
-                      <button
-                        onClick={() => onRefreshSyncSource(syncSource)}
-                        disabled={refreshingSyncSourceId === syncSource.id}
-                        className="text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed p-1"
-                        title="Sync now"
-                      >
-                        {refreshingSyncSourceId === syncSource.id ? (
-                          <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                        ) : (
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                          </svg>
-                        )}
-                      </button>
-                    )}
-                    <div className="flex-1 space-y-1">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium text-gray-900">{syncSource.name}</p>
-                        <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full">Transactions</span>
-                      </div>
-                      <p className="text-xs text-gray-500">{syncSource.email_address}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-right space-y-1">
-                      <p className="text-xs text-gray-500">
-                        {syncSource.transaction_count} transaction{syncSource.transaction_count !== 1 ? 's' : ''}
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        Last sync: {syncSource.last_synced_at ? new Date(syncSource.last_synced_at).toLocaleDateString() : 'Never'}
-                      </p>
-                    </div>
-                    {onEditSyncSource && (
-                      <button
-                        onClick={() => onEditSyncSource(syncSource)}
-                        className="text-gray-400 hover:text-gray-600 p-1"
-                        title="Edit"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                        </svg>
-                      </button>
-                    )}
-                    <div className={`w-2 h-2 rounded-full ${syncSource.status === 'active' ? 'bg-green-500' : 'bg-red-500'}`} />
-                  </div>
-                </div>
-              ))}
-              <div className="flex pt-2">
-                {onAddSyncSource && (
-                  <Button size="sm" variant="secondary" className="flex-1" onClick={onAddSyncSource}>
-                    + Add Sync Source
-                  </Button>
-                )}
-              </div>
-            </div>
+                          </div>
           )}
         </Card>
       </div>

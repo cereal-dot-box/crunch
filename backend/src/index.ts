@@ -14,6 +14,7 @@ import { resolvers } from './graphql/resolvers';
 import { getEmailScheduler } from './services/email/scheduler.service';
 import { verifyServiceToken, extractToken } from './lib/jwks';
 import { loggers } from './lib/logger';
+import { registerMCPRoutes } from './mcp/index.js';
 
 const log = loggers.server;
 
@@ -96,6 +97,9 @@ async function start() {
 
   // Register mercurius-logging to log GraphQL operations
   await app.register(mercuriusLogging);
+
+  // Register MCP routes
+  await registerMCPRoutes(app);
 
   // Custom logging for non-GraphQL requests
   app.addHook('onRequest', async (request, reply) => {

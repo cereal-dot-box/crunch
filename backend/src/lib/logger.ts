@@ -54,4 +54,5 @@ export const loggers = {
   get http() { return createModuleLogger('HTTP'); },
   get server() { return createModuleLogger('Server'); },
   get config() { return createModuleLogger('Config'); },
+  get mcp() { return createModuleLogger('MCP'); },
 };

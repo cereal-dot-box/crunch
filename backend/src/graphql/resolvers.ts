@@ -257,6 +257,24 @@ export const resolvers = {
   },
 
   Mutation: {
+    initialize_default_buckets: async (
+      _parent: any,
+      { userId }: { userId: string },
+      context: Context
+    ) => {
+      if (!context.isAuthenticated) throw new Error('Unauthorized');
+
+      // Check if user already has buckets
+      const existingBuckets = await BudgetBucket.getByUserId(userId);
+      if (existingBuckets.length > 0) {
+        return existingBuckets.map((bucket) => bucket.toJSON());
+      }
+
+      // Initialize default buckets
+      const buckets = await BudgetBucket.initializeDefaults(userId);
+      return buckets.map((bucket) => bucket.toJSON());
+    },
+
     add_account: async (
       _parent: any,
       { userId, input }: { userId: string; input: AddAccountInput },
@@ -313,10 +331,6 @@ export const resolvers = {
         throw new Error('Name is required');
       }
 
-      if (!input.type || input.type.length < 1) {
-        throw new Error('Type is required');
-      }
-
       if (!input.email_address || !input.email_address.includes('@')) {
         throw new Error('Valid email address is required');
       }
@@ -343,7 +357,6 @@ export const resolvers = {
       const syncSource = await SyncSource.create({
         accountId: input.account_id,
         name: input.name,
-        type: input.type,
         bank: account.bank ?? '',
         accountType: account.type ?? '',
         emailAddress: input.email_address,
@@ -384,7 +397,6 @@ export const resolvers = {
 
       const updated = await SyncSource.update(id, userId, {
         name: input.name ?? undefined,
-        type: input.type ?? undefined,
         emailAddress: input.email_address ?? undefined,
         imapHost: input.imap_host ?? undefined,
         imapPort: input.imap_port ?? undefined,

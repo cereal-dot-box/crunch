@@ -1,19 +1,20 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { listTransactions, listBudgets, getCurrentPeriod } from '../../server'
 import { Card, ProgressBar } from '../../components/ui'
-import { DEFAULT_BUDGETS } from '../../config/budgets'
+import { DEFAULT_BUDGETS, categorizeToBucket } from '../../config/budgets'
 import { useMemo } from 'react'
+import { AiChat } from '../../components/AiChat'
 
 export const Route = createFileRoute('/_protected/')({
   loader: async () => {
-    const [transactionsData, userBuckets, currentPeriod] = await Promise.all([
+    const [transactionsData, userBudgets, currentPeriod] = await Promise.all([
       listTransactions({ data: { limit: 1000, offset: 0 } }),
       listBudgets(),
       getCurrentPeriod(),
     ])
     return {
       transactions: transactionsData.transactions,
-      userBuckets,
+      userBudgets,
       currentPeriod,
     }
   },
@@ -22,49 +23,48 @@ export const Route = createFileRoute('/_protected/')({
 })
 
 function Dashboard() {
-  const { transactions, userBuckets, currentPeriod } = Route.useLoaderData()
+  const { transactions, userBudgets, currentPeriod } = Route.useLoaderData()
 
-  // Calculate budget stats
-  const budgetStats = useMemo(() => {
-    // Use user's custom buckets if available, otherwise defaults
-    const bucketsToUse = userBuckets || DEFAULT_BUDGETS.map(b => ({
+  // Get categories to display
+  const categories = useMemo(() => {
+    if (userBudgets && userBudgets.length > 0) {
+      return userBudgets
+    }
+    return DEFAULT_BUDGETS.map(b => ({
       id: b.id,
       bucket_id: b.id,
       name: b.name,
       monthly_limit: b.monthlyLimit,
       color: b.color,
     }))
+  }, [userBudgets])
 
-    const stats = {
-      income: 0,
-      outgoing: 0,
-      buckets: bucketsToUse.map((bucket) => ({
-        ...bucket,
-        spent: 0,
-        remaining: bucket.monthly_limit,
-      })),
-    }
+  // Calculate income, outgoing totals, and category spending
+  const { totals, categorySpending } = useMemo(() => {
+    const stats = { income: 0, outgoing: 0 }
+    const spending: Record<string, number> = {}
+
+    // Initialize spending for each category
+    categories.forEach(cat => {
+      spending[cat.bucket_id] = 0
+    })
 
     transactions.forEach((tx) => {
       if (tx.amount < 0) {
-        // Negative amount = expense/spending
         stats.outgoing += Math.abs(tx.amount)
 
-        // Categorize into bucket
-        const bucketId = 'fun' // Default for now since we don't have category names
-        const bucket = stats.buckets.find((b) => b.bucket_id === bucketId)
-        if (bucket) {
-          bucket.spent += Math.abs(tx.amount)
-          bucket.remaining = bucket.monthly_limit - bucket.spent
+        // Categorize the transaction
+        const bucketId = categorizeToBucket(tx.category_name, tx.category_hierarchy)
+        if (spending[bucketId] !== undefined) {
+          spending[bucketId] += Math.abs(tx.amount)
         }
       } else {
-        // Positive amount = income/deposit
         stats.income += tx.amount
       }
     })
 
-    return stats
-  }, [transactions, userBuckets])
+    return { totals: stats, categorySpending: spending }
+  }, [transactions, categories])
 
   const currentMonth = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 
@@ -77,52 +77,22 @@ function Dashboard() {
         </div>
 
         {/* Should Save This Month */}
-        <div className="mb-8">
+        <div className="mb-6">
           <Card clickable={false}>
             <div>
               <p className="text-sm font-medium text-black">Should Save This Month</p>
               <p className={`mt-1 text-3xl font-semibold ${
-                (currentPeriod?.projected_income || budgetStats.income) - budgetStats.outgoing >= 0
+                (currentPeriod?.projected_income || totals.income) - totals.outgoing >= 0
                   ? 'text-emerald-600'
                   : 'text-red-600'
               }`}>
-                ${((currentPeriod?.projected_income || budgetStats.income) - budgetStats.outgoing).toFixed(2)}
+                ${((currentPeriod?.projected_income || totals.income) - totals.outgoing).toFixed(2)}
               </p>
             </div>
           </Card>
         </div>
 
-        {/* Budget Buckets */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold text-black mb-4">Buckets</h2>
-
-          <div className="grid grid-cols-1 gap-4 lg:gap-6">
-            {budgetStats.buckets.map((bucket) => (
-              <Link
-                key={bucket.bucket_id}
-                to="/bucket/$bucketId"
-                params={{ bucketId: bucket.bucket_id }}
-                className="block"
-              >
-                <Card className="cursor-pointer shadow-md hover:shadow-lg">
-                  <div className="mb-3">
-                    <h3 className="text-base font-medium text-black">
-                      {bucket.name}
-                    </h3>
-                  </div>
-                  <ProgressBar
-                    current={bucket.spent}
-                    max={bucket.monthly_limit}
-                    showValues
-                    color={bucket.color}
-                  />
-                </Card>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        {/* Income, Outgoing, and Projected Summary */}
+        {/* Projected Income & Outgoing */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:gap-6 mb-8">
           <Card clickable={false}>
             <div>
@@ -133,23 +103,61 @@ function Dashboard() {
             </div>
           </Card>
 
-          <Card clickable={false}>
-            <div>
-              <p className="text-sm font-medium text-black">Income</p>
-              <p className="mt-1 text-3xl font-semibold text-emerald-600">
-                ${budgetStats.income.toFixed(2)}
-              </p>
-            </div>
-          </Card>
+          <Link to="/income" className="block">
+            <Card clickable className="cursor-pointer">
+              <div>
+                <p className="text-sm font-medium text-black">Income</p>
+                <p className="mt-1 text-3xl font-semibold text-emerald-600">
+                  ${totals.income.toFixed(2)}
+                </p>
+              </div>
+            </Card>
+          </Link>
 
-          <Card clickable={false}>
-            <div>
-              <p className="text-sm font-medium text-black">Outgoing</p>
-              <p className="mt-1 text-3xl font-semibold text-red-600">
-                ${budgetStats.outgoing.toFixed(2)}
-              </p>
-            </div>
-          </Card>
+          <Link to="/outgoing" className="block">
+            <Card clickable className="cursor-pointer">
+              <div>
+                <p className="text-sm font-medium text-black">Outgoing</p>
+                <p className="mt-1 text-3xl font-semibold text-red-600">
+                  ${totals.outgoing.toFixed(2)}
+                </p>
+              </div>
+            </Card>
+          </Link>
+        </div>
+
+        {/* Outgoing Categories */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold text-black mb-4">Outgoing</h2>
+          <div className="grid grid-cols-1 gap-4 lg:gap-6">
+            {categories.map((category) => (
+              <Link
+                key={category.bucket_id}
+                to="/bucket/$bucketId"
+                params={{ bucketId: category.bucket_id }}
+                className="block"
+              >
+                <Card className="cursor-pointer shadow-md hover:shadow-lg">
+                  <div className="mb-3">
+                    <h3 className="text-base font-medium text-black">
+                      {category.name}
+                    </h3>
+                  </div>
+                  <ProgressBar
+                    current={categorySpending[category.bucket_id] || 0}
+                    max={category.monthly_limit}
+                    showValues
+                    color={category.color}
+                  />
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* AI Chat */}
+        <div className="mb-8">
+          <AiChat />
         </div>
 
       </div>

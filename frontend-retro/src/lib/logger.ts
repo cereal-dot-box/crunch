@@ -28,6 +28,7 @@ export const loggers = {
   router: createModuleLogger('Router'),
   ui: createModuleLogger('UI'),
   query: createModuleLogger('Query'),
+  mcp: createModuleLogger('MCP'),
 };
 
 // Export the root logger for general use

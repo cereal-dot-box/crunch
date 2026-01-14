@@ -29,6 +29,7 @@ export class BmoCreditParser extends BalanceParser {
   }
 
   parse(email: EmailMessage): { type: 'credit_update'; data: ParsedCreditUpdate } | null {
+    // console.log('[BmoCreditParser] body_text:', email.body_text);
     if (!this.canParse(email)) {
       return null;
     }

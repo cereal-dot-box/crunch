@@ -4,19 +4,16 @@ import { BmoCreditParser } from '../../accounts/bmo/creditcard/balance/parser';
 import { RbcChequingTransactionParser } from '../../accounts/rbc/chequing/transaction/parser';
 
 /**
- * Hierarchical parser registry: bank -> accountType -> syncSourceType -> parser
+ * Parser registry: bank -> accountType -> array of parsers
+ * Each bank/accountType combination can have multiple parsers (transaction, balance, payment, etc.)
+ * Parsers use content-based detection via canParse() to determine if they can handle an email
  */
-const PARSERS: Record<string, Record<string, Record<string, EmailParser>>> = {
+const PARSERS: Record<string, Record<string, EmailParser[]>> = {
   bmo: {
-    creditcard: {
-      transactions: new BmoTransactionParser(),
-      balance: new BmoCreditParser(),
-    },
+    creditcard: [new BmoTransactionParser(), new BmoCreditParser()],
   },
   rbc: {
-    chequing: {
-      transactions: new RbcChequingTransactionParser(),
-    },
+    chequing: [new RbcChequingTransactionParser()],
   },
 };
 
@@ -24,10 +21,10 @@ export class EmailParserService {
   private allParsers: EmailParser[];
 
   constructor() {
-    // Flatten the nested bank -> accountType -> syncSourceType -> parser map
+    // Flatten the nested bank -> accountType -> parser[] map
     this.allParsers = Object.values(PARSERS)
       .flatMap((accountTypes) => Object.values(accountTypes))
-      .flatMap((syncSourceTypes) => Object.values(syncSourceTypes));
+      .flatMap((parsers) => parsers);
   }
 
   /**
@@ -36,7 +33,7 @@ export class EmailParserService {
   getParsersForBank(bank: string): EmailParser[] {
     const bankParsers = PARSERS[bank.toLowerCase()];
     if (!bankParsers) return [];
-    return Object.values(bankParsers).flatMap((syncTypes) => Object.values(syncTypes));
+    return Object.values(bankParsers).flatMap((parsers) => parsers);
   }
 
   /**
@@ -45,15 +42,21 @@ export class EmailParserService {
   getParsersForBankAndType(bank: string, accountType: string): EmailParser[] {
     const bankParsers = PARSERS[bank.toLowerCase()]?.[accountType.toLowerCase()];
     if (!bankParsers) return [];
-    return Object.values(bankParsers);
+    return bankParsers;
   }
 
   /**
-   * Get the specific parser for a bank, account type, and sync source type
-   * Direct O(1) lookup - no iteration needed
+   * @deprecated Use getParsersForBankAndType() or getParser() instead
+   * This method is kept for backward compatibility but should not be used
    */
   getParserFor(bank: string, accountType: string, syncSourceType: string): EmailParser | null {
-    return PARSERS[bank.toLowerCase()]?.[accountType.toLowerCase()]?.[syncSourceType.toLowerCase()] ?? null;
+    // Find a parser that matches the bank/accountType
+    const parsers = this.getParsersForBankAndType(bank, accountType);
+    if (parsers.length === 0) return null;
+
+    // Return the first parser (for backward compatibility)
+    // In the new architecture, use content-based detection via getParser() instead
+    return parsers[0];
   }
 
   /**
@@ -109,20 +112,20 @@ export class EmailParserService {
   }
 
   /**
-   * Register a parser for a specific bank, account type, and sync source type
+   * Register a parser for a specific bank and account type
+   * The parser will be added to the array of parsers for that bank/accountType combination
    */
   registerParser(parser: EmailParser): void {
     const bank = parser.bank.toLowerCase();
     const accountType = parser.type.toLowerCase();
-    const syncSourceType = parser.syncSourceType.toLowerCase();
 
     if (!PARSERS[bank]) {
       PARSERS[bank] = {};
     }
     if (!PARSERS[bank][accountType]) {
-      PARSERS[bank][accountType] = {};
+      PARSERS[bank][accountType] = [];
     }
-    PARSERS[bank][accountType][syncSourceType] = parser;
+    PARSERS[bank][accountType].push(parser);
     this.allParsers.push(parser);
   }
 

@@ -1,7 +1,9 @@
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { login as loginFn } from '../server/auth'
 import { Input, Button } from '../components/ui'
+import { authQuery } from '../lib/authQuery'
 import { loggers } from '../lib/logger'
 
 const log = loggers.auth
@@ -23,6 +25,7 @@ function LoginPage() {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -32,6 +35,12 @@ function LoginPage() {
     try {
       const result = await loginFn({ data: { email, password } })
       log.info('Login successful:', result)
+      // Set auth state directly (symmetric with logout)
+      queryClient.setQueryData(authQuery.queryKey, {
+        isSetup: true,
+        isAuthenticated: true,
+        user: result.user,
+      })
       navigate({ to: '/' })
       log.debug('Navigation called')
     } catch (err: any) {

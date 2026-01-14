@@ -8,19 +8,29 @@ import { useState } from 'react'
 export const Route = createFileRoute('/_protected/accounts')({
   loader: async () => {
     const accountsData = await listAccounts()
-    return { accounts: accountsData.accounts }
+    const accounts = accountsData.accounts
+
+    // Fetch transactions for each account
+    const transactionsResults = await Promise.all(
+      accounts.map(account =>
+        listTransactionsByAccount({ data: { accountId: account.id, limit: 100, offset: 0 } })
+      )
+    )
+
+    const transactionsMap: Record<number, any[]> = {}
+    accounts.forEach((account, index) => {
+      transactionsMap[account.id] = transactionsResults[index].transactions
+    })
+
+    return { accounts, transactionsMap }
   },
   component: AccountsPage,
   ssr: true,
 })
 
 function AccountsPage() {
-  const { accounts } = Route.useLoaderData()
+  const { accounts, transactionsMap } = Route.useLoaderData()
   const [showAddModal, setShowAddModal] = useState(false)
-
-  // For accounts needing transactions, we'd need to fetch them client-side
-  // or include them in the loader. For now, passing empty arrays.
-  const transactionsMap = new Map<number, any[]>()
 
   return (
     <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
@@ -41,12 +51,12 @@ function AccountsPage() {
                 {account.bank === 'bmo' && account.type === 'creditcard' ? (
                   <CreditCardAccountCard
                     account={account}
-                    transactions={transactionsMap.get(account.id)}
+                    transactions={transactionsMap[account.id]}
                   />
                 ) : account.bank === 'rbc' && account.type === 'chequing' ? (
                   <RbcChequingAccountCard
                     account={account}
-                    transactions={transactionsMap.get(account.id)}
+                    transactions={transactionsMap[account.id]}
                   />
                 ) : (
                   <DefaultAccountCard account={account} />

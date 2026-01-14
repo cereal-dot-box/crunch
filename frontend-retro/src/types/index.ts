@@ -20,7 +20,6 @@ export interface SyncSource {
   id: number;
   account_id: number;
   name: string;
-  type: string;
   email_address: string;
   imap_host: string;
   imap_port: number;

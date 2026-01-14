@@ -4,7 +4,6 @@ export interface SyncSourceRow {
   id: number;
   account_id: number;
   name: string;
-  type: string;
   bank: string | null;
   account_type: string | null;
   email_address: string;
@@ -27,7 +26,6 @@ export interface SyncSourceWithStats extends SyncSourceRow {
 export interface CreateSyncSourceParams {
   accountId: number;
   name: string;
-  type: string;
   bank: string;
   accountType: string;
   emailAddress: string;
@@ -39,7 +37,6 @@ export interface CreateSyncSourceParams {
 
 export interface UpdateSyncSourceParams {
   name?: string;
-  type?: string;
   emailAddress?: string;
   imapHost?: string;
   imapPort?: number;

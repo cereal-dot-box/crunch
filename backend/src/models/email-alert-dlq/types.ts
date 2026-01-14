@@ -1,4 +1,4 @@
-export type DLQErrorType = 'PARSE_ERROR' | 'NO_PARSER' | 'VALIDATION_ERROR' | 'NO_ACCOUNT';
+export type DLQErrorType = 'PARSE_ERROR' | 'NO_PARSER' | 'VALIDATION_ERROR' | 'NO_ACCOUNT' | 'UNSUPPORTED_TYPE';
 
 export interface EmailAlertDLQRow {
   id: number;

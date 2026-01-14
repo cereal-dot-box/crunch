@@ -421,6 +421,80 @@ Browser → Frontend → Auth Service (sign-out)
          ← Forward to browser
 ```
 
+## Frontend Auth State Management
+
+The frontend uses TanStack Query (React Query) to cache auth state. The router's `beforeLoad` hook checks this cache on every navigation to determine if the user is authenticated.
+
+### Auth Query
+
+```typescript
+// frontend-retro/src/lib/authQuery.ts
+export const authQuery = {
+  queryKey: ['auth'] as const,
+  queryFn: checkStatus,
+  staleTime: 5 * 60 * 1000, // 5 minutes
+  gcTime: 5 * 60 * 1000,
+  retry: false,
+}
+```
+
+### Router Auth Check
+
+```typescript
+// frontend-retro/src/routes/__root.tsx
+beforeLoad: async ({ context }) => {
+  let auth = context.queryClient.getQueryData(authQuery.queryKey)
+  if (!auth) {
+    auth = await context.queryClient.fetchQuery(authQuery)
+  }
+  return { auth }
+}
+```
+
+**Important:** The router uses `getQueryData()` first, which returns cached data immediately without checking staleness. This means auth state changes must be reflected in the cache synchronously.
+
+### Login/Logout Cache Updates
+
+Both login and logout use `setQueryData` to synchronously update the auth cache. This ensures the router immediately sees the correct auth state on navigation.
+
+**Login (`login.tsx`):**
+```typescript
+const result = await loginFn({ data: { email, password } })
+// Set auth state directly - router sees this immediately
+queryClient.setQueryData(authQuery.queryKey, {
+  isSetup: true,
+  isAuthenticated: true,
+  user: result.user,
+})
+navigate({ to: '/' })
+```
+
+**Logout (`logout.tsx`):**
+```typescript
+await logoutFn({})
+// Set auth state directly - router sees this immediately
+queryClient.setQueryData(authQuery.queryKey, {
+  isSetup: true,
+  isAuthenticated: false,
+  user: undefined,
+})
+navigate({ to: '/login' })
+```
+
+### Why setQueryData Instead of invalidateQueries?
+
+| Approach | Problem |
+|----------|---------|
+| `invalidateQueries` | Marks cache as stale but `getQueryData()` still returns old data |
+| `removeQueries` | Cancels in-flight queries, causing `CancelledError` |
+| `setQueryData` | Synchronously updates cache, no race conditions |
+
+The symmetric `setQueryData` approach ensures:
+1. No network requests needed after auth operations
+2. No race conditions with in-flight queries
+3. Router immediately sees correct auth state
+4. Login and logout use the same pattern
+
 ## Endpoints
 
 ### Auth Service (port 4000)

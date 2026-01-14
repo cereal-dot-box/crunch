@@ -3,6 +3,7 @@ import { getRequest, setCookie } from '@tanstack/react-start/server'
 import { z } from 'zod'
 import { zodValidator } from '@tanstack/zod-adapter'
 import { authClient } from '../lib/auth-client'
+import { graphqlRequest } from './graphql'
 import { loggers } from '../lib/logger'
 
 const log = loggers.auth
@@ -25,7 +26,12 @@ export const checkStatus = createServerFn({ method: 'GET' })
     const request = getRequest()
     const cookieHeader = request?.headers.get('cookie') || ''
 
-    log.debug('checkStatus - Cookie header received:', cookieHeader)
+    log.debug('=== checkStatus START ===')
+    log.debug('Cookie header received:', cookieHeader)
+    log.debug('Cookie header length:', cookieHeader.length)
+    log.debug('Cookie header empty?:', cookieHeader === '')
+    log.debug('Request URL:', request?.url)
+    log.debug('Request headers origin:', request?.headers.get('origin'))
 
     // Use Better Auth client to get session
     const { data, error } = await authClient.getSession({
@@ -36,9 +42,14 @@ export const checkStatus = createServerFn({ method: 'GET' })
       },
     })
 
-    log.debug('checkStatus - getSession result:', { data, error })
+    log.debug('Auth service getSession result:')
+    log.debug('  error:', error)
+    log.debug('  data.session exists:', !!data?.session)
+    log.debug('  data.user exists:', !!data?.user)
+    log.debug('  data.user:', data?.user)
+    log.debug('  isAuthenticated will be:', !!data?.user)
 
-    return {
+    const result = {
       isSetup: true,
       isAuthenticated: !!data?.user,
       user: data?.user ? {
@@ -47,6 +58,11 @@ export const checkStatus = createServerFn({ method: 'GET' })
         name: data.user.name,
       } : undefined,
     }
+
+    log.debug('=== checkStatus END ===')
+    log.debug('Returning:', result)
+
+    return result
   })
 
 export const login = createServerFn({ method: 'POST' })
@@ -112,7 +128,11 @@ export const login = createServerFn({ method: 'POST' })
 
     return {
       message: 'Login successful',
-      userId: result.data?.user?.id,
+      user: result.data?.user ? {
+        id: result.data.user.id,
+        email: result.data.user.email,
+        name: result.data.user.name,
+      } : undefined,
     }
   })
 
@@ -163,11 +183,29 @@ export const register = createServerFn({ method: 'POST' })
       throw new Error(result.error.message || 'Registration failed')
     }
 
-    // NOTE: JWT will be fetched on-demand in graphql.ts when needed
+    // Initialize default budget buckets for the new user
+    const userId = result.data?.user?.id
+    if (userId) {
+      try {
+        await graphqlRequest(`
+          mutation InitializeDefaultBuckets($userId: ID!) {
+            initialize_default_buckets(userId: $userId) {
+              id
+              bucket_id
+              name
+            }
+          }
+        `, { userId })
+        log.info('Default buckets initialized for user:', userId)
+      } catch (err) {
+        log.error('Failed to initialize default buckets:', err)
+        // Don't fail registration if bucket creation fails
+      }
+    }
 
     return {
       message: 'Registration successful',
-      userId: result.data?.user?.id,
+      userId,
     }
   })
 

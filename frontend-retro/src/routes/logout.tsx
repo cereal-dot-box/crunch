@@ -25,8 +25,12 @@ function LogoutPage() {
         log.error('Logout error:', e)
       }
 
-      // Invalidate the auth cache so the login page gets fresh data
-      queryClient.invalidateQueries(authQuery)
+      // Set auth state directly to logged-out (avoids cancelling in-flight queries)
+      queryClient.setQueryData(authQuery.queryKey, {
+        isSetup: true,
+        isAuthenticated: false,
+        user: undefined,
+      })
 
       log.debug('Redirecting to /login')
       navigate({ to: '/login' })
