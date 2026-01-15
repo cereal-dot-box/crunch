@@ -4,6 +4,9 @@ bun.lockb
 package-lock.json
 yarn.lock
 
+.yalc
+yalc*
+
 # Environment files
 .env
 .env.local

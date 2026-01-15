@@ -36,4 +36,4 @@ export type { MonthlyPeriod, CreateMonthlyPeriodInput, UpdateMonthlyPeriodInput 
 export { listTransactions, listTransactionsByAccount, getTransaction } from './transactions'
 
 // AI
-export { chatWithAi, executeMCPTool } from './ai'
+export { chatWithAi } from './ai'

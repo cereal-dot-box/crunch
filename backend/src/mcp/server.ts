@@ -117,6 +117,9 @@ export class McpServer {
 
     log.debug({ method: body.method, sessionId, userId }, 'Handling MCP request');
 
+    // Check if this is a notification (no id) - notifications don't expect responses
+    const isNotification = body.id === null || body.id === undefined;
+
     try {
       let result: any;
 
@@ -148,18 +151,29 @@ export class McpServer {
           };
           break;
 
+        case 'notifications/initialized':
+          // Client notification that initialization is complete
+          // Per MCP spec, return 202 Accepted for notifications
+          log.debug({ sessionId }, 'Received initialized notification');
+          reply.code(202).send();
+          return;
+
         default:
           throw new Error(`Unknown method: ${body.method}`);
       }
 
-      // Send successful response
-      const response: JSONRPCResponse = {
-        jsonrpc: '2.0',
-        id: body.id,
-        result,
-      };
-
-      reply.send(response);
+      // Send successful response (only for non-notification requests)
+      if (!isNotification) {
+        const response: JSONRPCResponse = {
+          jsonrpc: '2.0',
+          id: body.id,
+          result,
+        };
+        reply.send(response);
+      } else {
+        // Per MCP spec, notifications get 202 Accepted
+        reply.code(202).send();
+      }
     } catch (error) {
       log.error({ err: error, method: body.method, sessionId }, 'Error handling MCP request');
 

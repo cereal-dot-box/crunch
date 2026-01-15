@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { McpServer } from './server.js';
+import { generateGraphQLTools } from './generate-tools.js';
 import { loggers } from '../lib/logger';
 
 const log = loggers.mcp;
@@ -32,7 +33,13 @@ export async function registerMCPRoutes(app: FastifyInstance): Promise<void> {
         });
       }
 
-      // Handle the MCP request
+      // Handle GET requests - return 200 OK for connection check
+      // @ai-sdk/mcp client makes a GET request first before POST requests
+      if (request.method === 'GET') {
+        return reply.status(200).send({ status: 'ok' });
+      }
+
+      // Handle the MCP request (POST)
       await mcpServer.handleRequest(request, reply, userId);
     } catch (error) {
       log.error({ err: error }, 'Error in MCP route');
@@ -53,6 +60,54 @@ export async function registerMCPRoutes(app: FastifyInstance): Promise<void> {
     reply.send({
       status: 'ok',
       timestamp: new Date().toISOString(),
+    });
+  });
+
+  // Unauthenticated endpoint for tool schema generation (mcp-to-ai-sdk)
+  // This allows generating static tool definitions without auth
+  app.all('/mcp/schema', async (request, reply) => {
+    const body = request.body as { method?: string; id?: string | number } | undefined;
+
+    // Handle tools/list for mcp-to-ai-sdk CLI
+    if (request.method === 'GET' || body?.method === 'tools/list') {
+      const { tools } = generateGraphQLTools();
+      return reply.send({
+        jsonrpc: '2.0',
+        id: body?.id ?? 1,
+        result: { tools },
+      });
+    }
+
+    // Handle initialize request
+    if (body?.method === 'initialize') {
+      return reply.send({
+        jsonrpc: '2.0',
+        id: body.id,
+        result: {
+          protocolVersion: '2024-11-05',
+          serverInfo: {
+            name: 'crunch-financial-mcp',
+            version: '1.0.0',
+          },
+          capabilities: {
+            tools: {},
+          },
+        },
+      });
+    }
+
+    // Handle notifications (no response needed)
+    if (body?.method === 'notifications/initialized') {
+      return reply.code(202).send();
+    }
+
+    return reply.status(400).send({
+      jsonrpc: '2.0',
+      id: body?.id ?? null,
+      error: {
+        code: -32601,
+        message: 'Method not allowed on schema endpoint',
+      },
     });
   });
 
