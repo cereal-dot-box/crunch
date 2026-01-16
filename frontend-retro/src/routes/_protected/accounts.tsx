@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { listAccounts } from '../../server/accounts'
 import { listTransactionsByAccount } from '../../server/transactions'
-import { CreditCardAccountCard, DefaultAccountCard, RbcChequingAccountCard, Button } from '../../components/ui'
+import { CreditCardAccountCard, DefaultAccountCard, RbcChequingAccountCard, SplitwiseAccountCard, Button } from '../../components/ui'
 import { AddAccountModal } from '../../components/accounts/AddAccountModal'
 import { useState } from 'react'
 
@@ -48,7 +48,9 @@ function AccountsPage() {
                 params={{ accountId: account.id.toString() }}
                 className="block"
               >
-                {account.bank === 'bmo' && account.type === 'creditcard' ? (
+                {account.bank === 'splitwise' ? (
+                  <SplitwiseAccountCard account={account} />
+                ) : account.bank === 'bmo' && account.type === 'creditcard' ? (
                   <CreditCardAccountCard
                     account={account}
                     transactions={transactionsMap[account.id]}
@@ -70,7 +72,7 @@ function AccountsPage() {
           </div>
         )}
 
-        <div className="flex">
+        <div className="flex gap-4">
           <Button fullWidth onClick={() => setShowAddModal(true)}>Add Account</Button>
         </div>
       </div>

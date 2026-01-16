@@ -15,6 +15,8 @@ import { Route as LogoutRouteImport } from './routes/logout'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ProtectedRouteImport } from './routes/_protected'
 import { Route as ProtectedIndexRouteImport } from './routes/_protected/index'
+import { Route as ProtectedSplitwiseSetupRouteImport } from './routes/_protected/splitwise-setup'
+import { Route as ProtectedSplitwiseSettingsRouteImport } from './routes/_protected/splitwise-settings'
 import { Route as ProtectedOutgoingRouteImport } from './routes/_protected/outgoing'
 import { Route as ProtectedMonthlyRouteImport } from './routes/_protected/monthly'
 import { Route as ProtectedIncomeRouteImport } from './routes/_protected/income'
@@ -51,6 +53,17 @@ const ProtectedIndexRoute = ProtectedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => ProtectedRoute,
 } as any)
+const ProtectedSplitwiseSetupRoute = ProtectedSplitwiseSetupRouteImport.update({
+  id: '/splitwise-setup',
+  path: '/splitwise-setup',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedSplitwiseSettingsRoute =
+  ProtectedSplitwiseSettingsRouteImport.update({
+    id: '/splitwise-settings',
+    path: '/splitwise-settings',
+    getParentRoute: () => ProtectedRoute,
+  } as any)
 const ProtectedOutgoingRoute = ProtectedOutgoingRouteImport.update({
   id: '/outgoing',
   path: '/outgoing',
@@ -92,6 +105,8 @@ export interface FileRoutesByFullPath {
   '/income': typeof ProtectedIncomeRoute
   '/monthly': typeof ProtectedMonthlyRoute
   '/outgoing': typeof ProtectedOutgoingRoute
+  '/splitwise-settings': typeof ProtectedSplitwiseSettingsRoute
+  '/splitwise-setup': typeof ProtectedSplitwiseSetupRoute
   '/': typeof ProtectedIndexRoute
   '/account/$accountId': typeof ProtectedAccountAccountIdRoute
   '/bucket/$bucketId': typeof ProtectedBucketBucketIdRoute
@@ -105,6 +120,8 @@ export interface FileRoutesByTo {
   '/income': typeof ProtectedIncomeRoute
   '/monthly': typeof ProtectedMonthlyRoute
   '/outgoing': typeof ProtectedOutgoingRoute
+  '/splitwise-settings': typeof ProtectedSplitwiseSettingsRoute
+  '/splitwise-setup': typeof ProtectedSplitwiseSetupRoute
   '/': typeof ProtectedIndexRoute
   '/account/$accountId': typeof ProtectedAccountAccountIdRoute
   '/bucket/$bucketId': typeof ProtectedBucketBucketIdRoute
@@ -120,6 +137,8 @@ export interface FileRoutesById {
   '/_protected/income': typeof ProtectedIncomeRoute
   '/_protected/monthly': typeof ProtectedMonthlyRoute
   '/_protected/outgoing': typeof ProtectedOutgoingRoute
+  '/_protected/splitwise-settings': typeof ProtectedSplitwiseSettingsRoute
+  '/_protected/splitwise-setup': typeof ProtectedSplitwiseSetupRoute
   '/_protected/': typeof ProtectedIndexRoute
   '/_protected/account/$accountId': typeof ProtectedAccountAccountIdRoute
   '/_protected/bucket/$bucketId': typeof ProtectedBucketBucketIdRoute
@@ -135,6 +154,8 @@ export interface FileRouteTypes {
     | '/income'
     | '/monthly'
     | '/outgoing'
+    | '/splitwise-settings'
+    | '/splitwise-setup'
     | '/'
     | '/account/$accountId'
     | '/bucket/$bucketId'
@@ -148,6 +169,8 @@ export interface FileRouteTypes {
     | '/income'
     | '/monthly'
     | '/outgoing'
+    | '/splitwise-settings'
+    | '/splitwise-setup'
     | '/'
     | '/account/$accountId'
     | '/bucket/$bucketId'
@@ -162,6 +185,8 @@ export interface FileRouteTypes {
     | '/_protected/income'
     | '/_protected/monthly'
     | '/_protected/outgoing'
+    | '/_protected/splitwise-settings'
+    | '/_protected/splitwise-setup'
     | '/_protected/'
     | '/_protected/account/$accountId'
     | '/_protected/bucket/$bucketId'
@@ -219,6 +244,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedIndexRouteImport
       parentRoute: typeof ProtectedRoute
     }
+    '/_protected/splitwise-setup': {
+      id: '/_protected/splitwise-setup'
+      path: '/splitwise-setup'
+      fullPath: '/splitwise-setup'
+      preLoaderRoute: typeof ProtectedSplitwiseSetupRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/splitwise-settings': {
+      id: '/_protected/splitwise-settings'
+      path: '/splitwise-settings'
+      fullPath: '/splitwise-settings'
+      preLoaderRoute: typeof ProtectedSplitwiseSettingsRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
     '/_protected/outgoing': {
       id: '/_protected/outgoing'
       path: '/outgoing'
@@ -269,6 +308,8 @@ interface ProtectedRouteChildren {
   ProtectedIncomeRoute: typeof ProtectedIncomeRoute
   ProtectedMonthlyRoute: typeof ProtectedMonthlyRoute
   ProtectedOutgoingRoute: typeof ProtectedOutgoingRoute
+  ProtectedSplitwiseSettingsRoute: typeof ProtectedSplitwiseSettingsRoute
+  ProtectedSplitwiseSetupRoute: typeof ProtectedSplitwiseSetupRoute
   ProtectedIndexRoute: typeof ProtectedIndexRoute
   ProtectedAccountAccountIdRoute: typeof ProtectedAccountAccountIdRoute
   ProtectedBucketBucketIdRoute: typeof ProtectedBucketBucketIdRoute
@@ -279,6 +320,8 @@ const ProtectedRouteChildren: ProtectedRouteChildren = {
   ProtectedIncomeRoute: ProtectedIncomeRoute,
   ProtectedMonthlyRoute: ProtectedMonthlyRoute,
   ProtectedOutgoingRoute: ProtectedOutgoingRoute,
+  ProtectedSplitwiseSettingsRoute: ProtectedSplitwiseSettingsRoute,
+  ProtectedSplitwiseSetupRoute: ProtectedSplitwiseSetupRoute,
   ProtectedIndexRoute: ProtectedIndexRoute,
   ProtectedAccountAccountIdRoute: ProtectedAccountAccountIdRoute,
   ProtectedBucketBucketIdRoute: ProtectedBucketBucketIdRoute,

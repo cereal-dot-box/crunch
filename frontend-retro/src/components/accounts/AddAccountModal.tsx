@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import { getAvailableBankTypes, addAccount } from '../../server/accounts'
 import { Button } from '../ui'
 
@@ -9,6 +10,7 @@ interface AddAccountModalProps {
 
 // Display names for banks and types
 const BANK_LABELS: Record<string, string> = {
+  splitwise: 'Splitwise',
   bmo: 'BMO',
   td: 'TD',
   rbc: 'RBC',
@@ -30,6 +32,7 @@ const TYPE_LABELS: Record<string, string> = {
 }
 
 export function AddAccountModal({ onClose, onSuccess }: AddAccountModalProps) {
+  const navigate = useNavigate()
   const [availableBankTypes, setAvailableBankTypes] = useState<any[]>([])
   const [isLoadingTypes, setIsLoadingTypes] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -73,22 +76,6 @@ export function AddAccountModal({ onClose, onSuccess }: AddAccountModalProps) {
         <div className="p-6">
           <h2 className="text-2xl font-bold text-black mb-4">Add Account</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-black mb-1">
-                Account Name
-              </label>
-              <input
-                type="text"
-                className="w-full px-3 py-2 border border-black"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                placeholder="e.g., My BMO Credit Card"
-                required
-              />
-            </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-black mb-1">
@@ -134,41 +121,61 @@ export function AddAccountModal({ onClose, onSuccess }: AddAccountModalProps) {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-black mb-1">
-                Mask (last 4 digits)
-              </label>
-              <input
-                type="text"
-                className="w-full px-3 py-2 border border-black"
-                value={formData.mask}
-                onChange={(e) =>
-                  setFormData({ ...formData, mask: e.target.value })
-                }
-                placeholder="1234"
-                maxLength={4}
-                required
-              />
-            </div>
+            {formData.bank !== 'splitwise' && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-black mb-1">
+                    Account Name
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 border border-black"
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
+                    placeholder="e.g., My BMO Credit Card"
+                    required
+                  />
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-black mb-1">
-                Currency
-              </label>
-              <select
-                className="w-full px-3 py-2 border border-black"
-                value={formData.iso_currency_code}
-                onChange={(e) =>
-                  setFormData({ ...formData, iso_currency_code: e.target.value })
-                }
-                required
-              >
-                <option value="USD">USD</option>
-                <option value="CAD">CAD</option>
-                <option value="EUR">EUR</option>
-                <option value="GBP">GBP</option>
-              </select>
-            </div>
+                <div>
+                  <label className="block text-sm font-medium text-black mb-1">
+                    Mask (last 4 digits)
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 border border-black"
+                    value={formData.mask}
+                    onChange={(e) =>
+                      setFormData({ ...formData, mask: e.target.value })
+                    }
+                    placeholder="1234"
+                    maxLength={4}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-black mb-1">
+                    Currency
+                  </label>
+                  <select
+                    className="w-full px-3 py-2 border border-black"
+                    value={formData.iso_currency_code}
+                    onChange={(e) =>
+                      setFormData({ ...formData, iso_currency_code: e.target.value })
+                    }
+                    required
+                  >
+                    <option value="USD">USD</option>
+                    <option value="CAD">CAD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="GBP">GBP</option>
+                  </select>
+                </div>
+              </>
+            )}
 
             {error && (
               <div className="border border-red-600 text-red-600 p-3 text-sm">
@@ -176,19 +183,41 @@ export function AddAccountModal({ onClose, onSuccess }: AddAccountModalProps) {
               </div>
             )}
 
-            <div className="flex gap-3 pt-4">
-              <Button type="submit" disabled={isSubmitting} className="flex-1">
-                {isSubmitting ? 'Adding...' : 'Add Account'}
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={onClose}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-            </div>
+            {formData.bank === 'splitwise' ? (
+              <div className="flex gap-3 pt-4">
+                <Button
+                  type="button"
+                  className="flex-1"
+                  onClick={() => {
+                    onClose()
+                    navigate({ to: '/splitwise-setup' })
+                  }}
+                >
+                  Connect with Splitwise
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={onClose}
+                >
+                  Cancel
+                </Button>
+              </div>
+            ) : (
+              <div className="flex gap-3 pt-4">
+                <Button type="submit" disabled={isSubmitting} className="flex-1">
+                  {isSubmitting ? 'Adding...' : 'Add Account'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={onClose}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
+              </div>
+            )}
           </form>
         </div>
       </div>

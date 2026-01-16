@@ -10,6 +10,8 @@ export interface Database {
   EmailAlertDLQ: EmailAlertDLQTable;
   SyncSource: SyncSourceTable;
   MonthlyPeriod: MonthlyPeriodTable;
+  SplitwiseCredential: SplitwiseCredentialTable;
+  SplitwiseSetting: SplitwiseSettingTable;
 }
 
 export interface SessionTable {
@@ -156,6 +158,35 @@ export interface MonthlyPeriodTable {
   actual_income: number; // What actually happened
   status: string; // 'open' | 'closed'
   notes: string | null;
+  created_at: ColumnType<string, string | undefined, never>;
+  updated_at: ColumnType<string, string | undefined, string>;
+}
+
+/**
+ * SplitwiseCredential - Stores OAuth credentials for Splitwise integration
+ * Tokens are encrypted at rest using the encryption utility
+ */
+export interface SplitwiseCredentialTable {
+  id: ColumnType<number, never, never>;
+  user_id: string;
+  access_token: string; // Encrypted
+  refresh_token: string | null; // Encrypted (if Splitwise provides refresh tokens)
+  token_type: string; // e.g., "Bearer"
+  expires_at: string | null; // ISO timestamp when token expires
+  splitwise_user_id: string; // Splitwise user ID for reference
+  created_at: ColumnType<string, string | undefined, never>;
+  updated_at: ColumnType<string, string | undefined, string>;
+}
+
+/**
+ * SplitwiseSetting - Stores user preferences for Splitwise integration
+ * Controls which groups to sync and auto-sync settings
+ */
+export interface SplitwiseSettingTable {
+  id: ColumnType<number, never, never>;
+  user_id: string;
+  included_group_ids: string; // JSON array of group IDs
+  auto_sync_enabled: ColumnType<number, number | undefined, number>; // Boolean as integer
   created_at: ColumnType<string, string | undefined, never>;
   updated_at: ColumnType<string, string | undefined, string>;
 }

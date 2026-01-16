@@ -5,6 +5,10 @@ import { BalanceUpdate } from '../models/balance-update';
 import { Transaction } from '../models/transaction';
 import { SyncSource } from '../models/sync-source';
 import { MonthlyPeriod } from '../models/monthly-period';
+import { SplitwiseCredential } from '../models/splitwise-credential';
+import { SplitwiseSetting } from '../models/splitwise-setting';
+import { oauthStateStore } from '../lib/oauth-state';
+import { SplitwiseService } from '../services/splitwise.service';
 import { EmailSyncService } from '../services/email/sync.service';
 import { ImapService } from '../services/email/imap.service';
 import { getEmailParserService } from '../services/email/parser.service';
@@ -63,6 +67,11 @@ interface UpdateMonthlyPeriodInput {
   actual_income?: number;
   status?: string;
   notes?: string | null;
+}
+
+interface UpdateSplitwiseSettingsInput {
+  included_group_ids?: number[];
+  auto_sync_enabled?: boolean;
 }
 
 export const resolvers = {
@@ -252,7 +261,82 @@ export const resolvers = {
 
     available_bank_types: () => {
       const parserService = getEmailParserService();
-      return parserService.getAvailableBankTypes();
+      const bankTypes = parserService.getAvailableBankTypes();
+      // Add Splitwise as a bank option
+      return [...bankTypes, { bank: 'splitwise', types: ['splitwise'] }];
+    },
+
+    // Splitwise queries
+    splitwise_authorize_url: async (
+      _parent: any,
+      { userId }: { userId: string },
+      context: Context
+    ) => {
+      if (!context.isAuthenticated) throw new Error('Unauthorized');
+
+      // Generate OAuth state using the state store
+      const state = await oauthStateStore.generate(userId);
+
+      // Build the real Splitwise authorize URL
+      const splitwiseService = new SplitwiseService();
+      const url = splitwiseService.getAuthorizationUrl(state);
+
+      return { url };
+    },
+
+    splitwise_credential: async (
+      _parent: any,
+      { userId }: { userId: string },
+      context: Context
+    ) => {
+      if (!context.isAuthenticated) throw new Error('Unauthorized');
+
+      // Check if user has a Splitwise credential
+      const credential = await SplitwiseCredential.getByUserId(userId);
+
+      if (!credential) {
+        return null;
+      }
+
+      // Return credential without exposing encrypted tokens
+      return credential.toJSON();
+    },
+
+    splitwise_groups: async (
+      _parent: any,
+      { userId }: { userId: string },
+      context: Context
+    ) => {
+      if (!context.isAuthenticated) throw new Error('Unauthorized');
+
+      // Get user's Splitwise credential
+      const credential = await SplitwiseCredential.getByUserId(userId);
+
+      if (!credential) {
+        throw new Error('No Splitwise credential found for user');
+      }
+
+      // Decrypt access token using instance method
+      const accessToken = credential.getAccessToken();
+
+      // Fetch groups from Splitwise API
+      const splitwiseService = new SplitwiseService();
+      const groups = await splitwiseService.getGroups(accessToken);
+
+      return groups;
+    },
+
+    splitwise_settings: async (
+      _parent: any,
+      { userId }: { userId: string },
+      context: Context
+    ) => {
+      if (!context.isAuthenticated) throw new Error('Unauthorized');
+
+      // Get or create default settings for the user
+      const setting = await SplitwiseSetting.getOrCreateDefault(userId);
+
+      return setting.toJSON();
     },
   },
 
@@ -674,6 +758,103 @@ export const resolvers = {
         errors: result.errors,
         duration: result.duration,
       };
+    },
+
+    // Splitwise mutations
+    splitwise_complete_oauth: async (
+      _parent: any,
+      { userId, code, state }: { userId: string; code: string; state: string },
+      context: Context
+    ) => {
+      if (!context.isAuthenticated) throw new Error('Unauthorized');
+
+      // Validate OAuth state
+      const stateValidation = await oauthStateStore.validate(state);
+      if (!stateValidation.valid) {
+        throw new Error('Invalid or expired OAuth state');
+      }
+
+      // Verify the state belongs to the current user
+      if (stateValidation.userId !== userId) {
+        throw new Error('OAuth state user mismatch');
+      }
+
+      // Exchange authorization code for tokens
+      const splitwiseService = new SplitwiseService();
+      const tokenResponse = await splitwiseService.exchangeCodeForToken(code);
+
+      // Get the Splitwise user ID
+      const splitwiseUser = await splitwiseService.getCurrentUser(tokenResponse.access_token);
+
+      // Calculate token expiration
+      const expiresAt = splitwiseService.calculateTokenExpiration(tokenResponse.expires_in);
+
+      // Check if credential already exists and update, or create new
+      const existing = await SplitwiseCredential.getByUserId(userId);
+
+      if (existing) {
+        const updated = await SplitwiseCredential.update(userId, {
+          accessToken: tokenResponse.access_token,
+          refreshToken: tokenResponse.refresh_token,
+          expiresAt,
+        });
+        return updated!.toJSON();
+      }
+
+      const credential = await SplitwiseCredential.create({
+        userId,
+        accessToken: tokenResponse.access_token,
+        refreshToken: tokenResponse.refresh_token,
+        tokenType: tokenResponse.token_type,
+        expiresAt,
+        splitwiseUserId: splitwiseUser.id.toString(),
+      });
+
+      log.info({ userId, splitwiseUserId: splitwiseUser.id }, 'Splitwise OAuth completed successfully');
+
+      return credential.toJSON();
+    },
+
+    splitwise_disconnect: async (
+      _parent: any,
+      { userId }: { userId: string },
+      context: Context
+    ) => {
+      if (!context.isAuthenticated) throw new Error('Unauthorized');
+
+      await SplitwiseCredential.delete(userId);
+      return true;
+    },
+
+    splitwise_update_settings: async (
+      _parent: any,
+      { userId, input }: { userId: string; input: UpdateSplitwiseSettingsInput },
+      context: Context
+    ) => {
+      if (!context.isAuthenticated) throw new Error('Unauthorized');
+
+      // Validate input
+      if (input.included_group_ids !== undefined) {
+        if (!Array.isArray(input.included_group_ids)) {
+          throw new Error('included_group_ids must be an array');
+        }
+        // Verify all group IDs are numbers
+        if (!input.included_group_ids.every((id) => typeof id === 'number' && Number.isInteger(id))) {
+          throw new Error('included_group_ids must contain only integers');
+        }
+      }
+
+      if (input.auto_sync_enabled !== undefined && typeof input.auto_sync_enabled !== 'boolean') {
+        throw new Error('auto_sync_enabled must be a boolean');
+      }
+
+      // Upsert settings (create if doesn't exist, update if it does)
+      const setting = await SplitwiseSetting.upsert(userId, {
+        includedGroupIds: input.included_group_ids,
+        autoSyncEnabled: input.auto_sync_enabled,
+      });
+
+      return setting.toJSON();
     },
   },
 };

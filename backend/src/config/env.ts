@@ -21,6 +21,11 @@ const envSchema = z.object({
 
   // Redis
   REDIS_URL: z.string().optional().default('redis://localhost:6379'),
+
+  // Splitwise OAuth
+  SPLITWISE_CLIENT_ID: z.string().optional(),
+  SPLITWISE_CLIENT_SECRET: z.string().optional(),
+  SPLITWISE_REDIRECT_URI: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

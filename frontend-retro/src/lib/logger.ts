@@ -29,6 +29,7 @@ export const loggers = {
   ui: createModuleLogger('UI'),
   query: createModuleLogger('Query'),
   mcp: createModuleLogger('MCP'),
+  oauth: createModuleLogger('OAuth'),
 };
 
 // Export the root logger for general use

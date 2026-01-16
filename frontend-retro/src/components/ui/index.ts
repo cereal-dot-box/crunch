@@ -9,6 +9,7 @@ export { ProgressBar, type ProgressBarProps } from './ProgressBar';
 export { CreditCardAccountCard } from '../accounts/bmo/CreditCardAccountCard';
 export { DefaultAccountCard } from '../accounts/default/DefaultAccountCard';
 export { RbcChequingAccountCard } from '../accounts/rbc/RbcChequingAccountCard';
+export { SplitwiseAccountCard } from '../accounts/splitwise/SplitwiseAccountCard';
 export { CreditCardAccountDetail } from '../accounts/bmo/CreditCardAccountDetail';
 export { DefaultAccountDetail } from '../accounts/default/DefaultAccountDetail';
 export { RbcChequingAccountDetail } from '../accounts/rbc/RbcChequingAccountDetail';

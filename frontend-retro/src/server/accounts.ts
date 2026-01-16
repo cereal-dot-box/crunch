@@ -3,30 +3,56 @@ import { z } from 'zod'
 import { zodValidator } from '@tanstack/zod-adapter'
 import type { Account, SyncSource, AvailableBankType } from '../types'
 import { graphqlRequest, getUserIdFromSession } from './graphql'
+import { getSplitwiseCredential } from './splitwise'
 
 export const listAccounts = createServerFn({ method: 'GET' })
   .handler(async () => {
     const userId = await getUserIdFromSession()
     if (!userId) throw new Error('Not authenticated')
 
-    const data = await graphqlRequest<{ accounts: Account[] }>(`
-      query Accounts($userId: ID!) {
-        accounts(userId: $userId) {
-          id
-          name
-          bank
-          type
-          mask
-          current_balance
-          available_balance
-          iso_currency_code
-          is_active
-          created_at
-          updated_at
+    // Fetch accounts and Splitwise credentials in parallel
+    const [accountsData, splitwiseData] = await Promise.all([
+      graphqlRequest<{ accounts: Account[] }>(`
+        query Accounts($userId: ID!) {
+          accounts(userId: $userId) {
+            id
+            name
+            bank
+            type
+            mask
+            current_balance
+            available_balance
+            iso_currency_code
+            is_active
+            created_at
+            updated_at
+          }
         }
+      `, { userId }),
+      getSplitwiseCredential()
+    ])
+
+    const accounts = accountsData.accounts
+
+    // Add Splitwise as an account if connected
+    if (splitwiseData.connected && splitwiseData.credential) {
+      const splitwiseAccount: Account = {
+        id: -splitwiseData.credential.id, // Negative ID to distinguish
+        name: 'Splitwise',
+        bank: 'splitwise',
+        type: 'splitwise',
+        mask: null,
+        current_balance: 0,
+        available_balance: null,
+        iso_currency_code: 'USD',
+        is_active: true,
+        created_at: splitwiseData.credential.created_at,
+        updated_at: splitwiseData.credential.updated_at
       }
-    `, { userId })
-    return { accounts: data.accounts }
+      accounts.push(splitwiseAccount)
+    }
+
+    return { accounts }
   })
 
 export const getAccount = createServerFn({ method: 'GET' })

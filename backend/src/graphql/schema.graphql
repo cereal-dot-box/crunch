@@ -107,6 +107,41 @@ type SyncResult {
   duration: Int!
 }
 
+type SplitwiseCredential {
+  id: Int!
+  user_id: String!
+  splitwise_user_id: String!
+  created_at: String!
+  updated_at: String!
+}
+
+type SplitwiseSetting {
+  id: Int!
+  user_id: String!
+  included_group_ids: [Int!]!
+  auto_sync_enabled: Boolean!
+  created_at: String!
+  updated_at: String!
+}
+
+type SplitwiseGroup {
+  id: Int!
+  name: String!
+  updated_at: String!
+  members: [SplitwiseGroupMember!]!
+}
+
+type SplitwiseGroupMember {
+  id: Int!
+  first_name: String!
+  last_name: String
+  email: String!
+}
+
+type SplitwiseAuthorizeUrl {
+  url: String!
+}
+
 type AvailableBankType {
   bank: String!
   types: [String!]!
@@ -139,6 +174,11 @@ input UpdateSyncSourceInput {
   imap_folder: String
 }
 
+input UpdateSplitwiseSettingsInput {
+  included_group_ids: [Int!]
+  auto_sync_enabled: Boolean
+}
+
 type Query {
   accounts(userId: ID!): [Account!]!
   budget_buckets(userId: ID!): [BudgetBucket!]!
@@ -153,6 +193,10 @@ type Query {
   sync_sources_by_account(userId: ID!, account_id: Int!): [SyncSource!]!
   sync_source(userId: ID!, id: Int!): SyncSource
   available_bank_types: [AvailableBankType!]!
+  splitwise_authorize_url(userId: ID!): SplitwiseAuthorizeUrl!
+  splitwise_credential(userId: ID!): SplitwiseCredential
+  splitwise_groups(userId: ID!): [SplitwiseGroup!]!
+  splitwise_settings(userId: ID!): SplitwiseSetting!
 }
 
 type Mutation {
@@ -170,4 +214,7 @@ type Mutation {
   delete_sync_source(userId: ID!, id: Int!): Boolean!
   test_sync_source_connection(userId: ID!, id: Int!): TestConnectionResult!
   sync_sync_source(userId: ID!, id: Int!): SyncResult!
+  splitwise_complete_oauth(userId: ID!, code: String!, state: String!): SplitwiseCredential!
+  splitwise_disconnect(userId: ID!): Boolean!
+  splitwise_update_settings(userId: ID!, input: UpdateSplitwiseSettingsInput!): SplitwiseSetting!
 }
