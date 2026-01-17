@@ -3,6 +3,15 @@ import { z } from 'zod'
 import { zodValidator } from '@tanstack/zod-adapter'
 import { graphqlRequest, getUserIdFromSession } from './graphql'
 import { loggers } from '../lib/logger'
+import {
+  SplitwiseAuthorizeUrlDocument,
+  SplitwiseCompleteOAuthDocument,
+  SplitwiseCredentialDocument,
+  SplitwiseDisconnectDocument,
+  SplitwiseGroupsDocument,
+  SplitwiseSettingsDocument,
+  SplitwiseUpdateSettingsDocument,
+} from '../graphql/graphql'
 
 const log = loggers.oauth
 
@@ -26,11 +35,7 @@ export const initiateSplitwiseOAuth = createServerFn({ method: 'GET' })
       const result = await graphqlRequest<{
         splitwise_authorize_url: { url: string }
       }>(
-        `query SplitwiseAuthorizeUrl($userId: ID!) {
-          splitwise_authorize_url(userId: $userId) {
-            url
-          }
-        }`,
+        SplitwiseAuthorizeUrlDocument,
         { userId }
       )
 
@@ -76,15 +81,7 @@ export const completeSplitwiseOAuth = createServerFn({ method: 'POST' })
           updated_at: string
         }
       }>(
-        `mutation SplitwiseCompleteOAuth($userId: ID!, $code: String!, $state: String!) {
-          splitwise_complete_oauth(userId: $userId, code: $code, state: $state) {
-            id
-            user_id
-            splitwise_user_id
-            created_at
-            updated_at
-          }
-        }`,
+        SplitwiseCompleteOAuthDocument,
         { userId, code: data.code, state: data.state }
       )
 
@@ -121,15 +118,7 @@ export const getSplitwiseCredential = createServerFn({ method: 'GET' })
           updated_at: string
         } | null
       }>(
-        `query SplitwiseCredential($userId: ID!) {
-          splitwise_credential(userId: $userId) {
-            id
-            user_id
-            splitwise_user_id
-            created_at
-            updated_at
-          }
-        }`,
+        SplitwiseCredentialDocument,
         { userId }
       )
 
@@ -160,9 +149,7 @@ export const disconnectSplitwise = createServerFn({ method: 'POST' })
       await graphqlRequest<{
         splitwise_disconnect: boolean
       }>(
-        `mutation SplitwiseDisconnect($userId: ID!) {
-          splitwise_disconnect(userId: $userId)
-        }`,
+        SplitwiseDisconnectDocument,
         { userId }
       )
 
@@ -202,19 +189,7 @@ export const getSplitwiseGroups = createServerFn({ method: 'GET' })
           }>
         }>
       }>(
-        `query SplitwiseGroups($userId: ID!) {
-          splitwise_groups(userId: $userId) {
-            id
-            name
-            updated_at
-            members {
-              id
-              first_name
-              last_name
-              email
-            }
-          }
-        }`,
+        SplitwiseGroupsDocument,
         { userId }
       )
 
@@ -252,16 +227,7 @@ export const getSplitwiseSettings = createServerFn({ method: 'GET' })
           updated_at: string
         }
       }>(
-        `query SplitwiseSettings($userId: ID!) {
-          splitwise_settings(userId: $userId) {
-            id
-            user_id
-            included_group_ids
-            auto_sync_enabled
-            created_at
-            updated_at
-          }
-        }`,
+        SplitwiseSettingsDocument,
         { userId }
       )
 
@@ -300,16 +266,7 @@ export const updateSplitwiseSettings = createServerFn({ method: 'POST' })
           updated_at: string
         }
       }>(
-        `mutation SplitwiseUpdateSettings($userId: ID!, $input: UpdateSplitwiseSettingsInput!) {
-          splitwise_update_settings(userId: $userId, input: $input) {
-            id
-            user_id
-            included_group_ids
-            auto_sync_enabled
-            created_at
-            updated_at
-          }
-        }`,
+        SplitwiseUpdateSettingsDocument,
         { userId, input: data }
       )
 

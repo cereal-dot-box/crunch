@@ -4,6 +4,18 @@ import { zodValidator } from '@tanstack/zod-adapter'
 import type { Account, SyncSource, AvailableBankType } from '../types'
 import { graphqlRequest, getUserIdFromSession } from './graphql'
 import { getSplitwiseCredential } from './splitwise'
+import {
+  AccountsDocument,
+  DeactivateAccountDocument,
+  AddAccountDocument,
+  SyncSourcesByAccountDocument,
+  AvailableBankTypesDocument,
+  AddSyncSourceDocument,
+  UpdateSyncSourceDocument,
+  DeleteSyncSourceDocument,
+  TestSyncSourceConnectionDocument,
+  SyncSyncSourceDocument,
+} from '../graphql/graphql'
 
 export const listAccounts = createServerFn({ method: 'GET' })
   .handler(async () => {
@@ -12,23 +24,7 @@ export const listAccounts = createServerFn({ method: 'GET' })
 
     // Fetch accounts and Splitwise credentials in parallel
     const [accountsData, splitwiseData] = await Promise.all([
-      graphqlRequest<{ accounts: Account[] }>(`
-        query Accounts($userId: ID!) {
-          accounts(userId: $userId) {
-            id
-            name
-            bank
-            type
-            mask
-            current_balance
-            available_balance
-            iso_currency_code
-            is_active
-            created_at
-            updated_at
-          }
-        }
-      `, { userId }),
+      graphqlRequest<{ accounts: Account[] }>(AccountsDocument, { userId }),
       getSplitwiseCredential()
     ])
 
@@ -73,11 +69,7 @@ export const deactivateAccount = createServerFn({ method: 'POST' })
     if (!userId) throw new Error('Not authenticated')
 
     const response = await graphqlRequest<{ deactivate_account: boolean }>(
-      `
-      mutation DeactivateAccount($userId: ID!, $account_id: Int!) {
-        deactivate_account(userId: $userId, account_id: $account_id)
-      }
-    `,
+      DeactivateAccountDocument,
       { userId, account_id: data.id }
     )
     return response.deactivate_account
@@ -96,23 +88,7 @@ export const addAccount = createServerFn({ method: 'POST' })
     if (!userId) throw new Error('Not authenticated')
 
     const response = await graphqlRequest<{ add_account: Account }>(
-      `
-      mutation AddAccount($userId: ID!, $input: AddAccountInput!) {
-        add_account(userId: $userId, input: $input) {
-          id
-          name
-          bank
-          type
-          mask
-          current_balance
-          available_balance
-          iso_currency_code
-          is_active
-          created_at
-          updated_at
-        }
-      }
-    `,
+      AddAccountDocument,
       { userId, input }
     )
     return { account: response.add_account }
@@ -125,26 +101,7 @@ export const getProviders = createServerFn({ method: 'GET' })
     if (!userId) throw new Error('Not authenticated')
 
     const response = await graphqlRequest<{ sync_sources_by_account: SyncSource[] }>(
-      `
-      query SyncSourcesByAccount($userId: ID!, $account_id: Int!) {
-        sync_sources_by_account(userId: $userId, account_id: $account_id) {
-          id
-          account_id
-          name
-          email_address
-          imap_host
-          imap_port
-          imap_folder
-          status
-          last_synced_at
-          last_processed_uid
-          is_active
-          created_at
-          balance_count
-          transaction_count
-        }
-      }
-    `,
+      SyncSourcesByAccountDocument,
       { userId, account_id: data.accountId }
     )
     return { providers: response.sync_sources_by_account }
@@ -153,14 +110,10 @@ export const getProviders = createServerFn({ method: 'GET' })
 export const getAvailableBankTypes = createServerFn({ method: 'GET' })
   .handler(async () => {
     // This is public data, no userId needed
-    const response = await graphqlRequest<{ available_bank_types: AvailableBankType[] }>(`
-      query AvailableBankTypes {
-        available_bank_types {
-          bank
-          types
-        }
-      }
-    `)
+    const response = await graphqlRequest<{ available_bank_types: AvailableBankType[] }>(
+      AvailableBankTypesDocument,
+      {}
+    )
     return response.available_bank_types
   })
 
@@ -179,26 +132,7 @@ export const addSyncSource = createServerFn({ method: 'POST' })
     if (!userId) throw new Error('Not authenticated')
 
     const response = await graphqlRequest<{ add_sync_source: SyncSource }>(
-      `
-      mutation AddSyncSource($userId: ID!, $input: AddSyncSourceInput!) {
-        add_sync_source(userId: $userId, input: $input) {
-          id
-          account_id
-          name
-          email_address
-          imap_host
-          imap_port
-          imap_folder
-          status
-          last_synced_at
-          last_processed_uid
-          is_active
-          created_at
-          balance_count
-          transaction_count
-        }
-      }
-    `,
+      AddSyncSourceDocument,
       { userId, input }
     )
     return { provider: response.add_sync_source }
@@ -221,26 +155,7 @@ export const updateSyncSource = createServerFn({ method: 'POST' })
     if (!userId) throw new Error('Not authenticated')
 
     const response = await graphqlRequest<{ update_sync_source: SyncSource }>(
-      `
-      mutation UpdateSyncSource($userId: ID!, $id: Int!, $input: UpdateSyncSourceInput!) {
-        update_sync_source(userId: $userId, id: $id, input: $input) {
-          id
-          account_id
-          name
-          email_address
-          imap_host
-          imap_port
-          imap_folder
-          status
-          last_synced_at
-          last_processed_uid
-          is_active
-          created_at
-          balance_count
-          transaction_count
-        }
-      }
-    `,
+      UpdateSyncSourceDocument,
       { userId, id: data.id, input: data.input }
     )
     return { provider: response.update_sync_source }
@@ -253,11 +168,7 @@ export const deleteSyncSource = createServerFn({ method: 'POST' })
     if (!userId) throw new Error('Not authenticated')
 
     const response = await graphqlRequest<{ delete_sync_source: boolean }>(
-      `
-      mutation DeleteSyncSource($userId: ID!, $id: Int!) {
-        delete_sync_source(userId: $userId, id: $id)
-      }
-    `,
+      DeleteSyncSourceDocument,
       { userId, id: data.id }
     )
     return response.delete_sync_source
@@ -272,14 +183,7 @@ export const testSyncSourceConnection = createServerFn({ method: 'POST' })
     const response = await graphqlRequest<{
       test_sync_source_connection: { success: boolean; error_message: string | null }
     }>(
-      `
-      mutation TestSyncSourceConnection($userId: ID!, $id: Int!) {
-        test_sync_source_connection(userId: $userId, id: $id) {
-          success
-          error_message
-        }
-      }
-    `,
+      TestSyncSourceConnectionDocument,
       { userId, id: data.id }
     )
     return response.test_sync_source_connection
@@ -300,17 +204,7 @@ export const syncSyncSource = createServerFn({ method: 'POST' })
         duration: number
       }
     }>(
-      `
-      mutation SyncSyncSource($userId: ID!, $id: Int!) {
-        sync_sync_source(userId: $userId, id: $id) {
-          timestamp
-          emails_fetched
-          jobs_enqueued
-          errors
-          duration
-        }
-      }
-    `,
+      SyncSyncSourceDocument,
       { userId, id: data.id }
     )
     return response.sync_sync_source

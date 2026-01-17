@@ -1,6 +1,8 @@
 import { getRequest } from '@tanstack/react-start/server'
 import { authClient } from '../lib/auth-client'
 import { getServiceToken } from './service-auth'
+import { print } from 'graphql'
+import type { DocumentNode } from 'graphql'
 
 const API_URL = import.meta.env.VITE_API_URL ?? ''
 
@@ -9,8 +11,17 @@ interface GraphQLResponse<T> {
   errors?: Array<{ message: string }>
 }
 
+type DocumentLike = string | DocumentNode
+
+function extractQueryString(document: DocumentLike): string {
+  if (typeof document === 'string') {
+    return document
+  }
+  return print(document)
+}
+
 export async function graphqlRequest<T>(
-  query: string,
+  query: DocumentLike,
   variables?: Record<string, unknown>
 ): Promise<T> {
   // Get service token (cached)
@@ -21,10 +32,12 @@ export async function graphqlRequest<T>(
     Authorization: `Bearer ${serviceToken}`,
   }
 
+  const queryString = extractQueryString(query)
+
   const response = await fetch(`${API_URL}/graphql`, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ query, variables }),
+    body: JSON.stringify({ query: queryString, variables }),
   })
 
   if (!response.ok) {

@@ -1,0 +1,25 @@
+query SyncSourcesByAccount($userId: ID!, $account_id: Int!) {
+  sync_sources_by_account(userId: $userId, account_id: $account_id) {
+    id
+    account_id
+    name
+    email_address
+    imap_host
+    imap_port
+    imap_folder
+    status
+    last_synced_at
+    last_processed_uid
+    is_active
+    created_at
+    balance_count
+    transaction_count
+  }
+}
+
+query AvailableBankTypes {
+  available_bank_types {
+    bank
+    types
+  }
+}

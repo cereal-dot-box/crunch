@@ -2,6 +2,11 @@ import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { zodValidator } from '@tanstack/zod-adapter'
 import { graphqlRequest, getUserIdFromSession } from './graphql'
+import {
+  GetBudgetBucketsDocument,
+  GetBudgetBucketDocument,
+  UpdateBudgetBucketDocument,
+} from '../graphql/graphql'
 
 export interface BudgetBucket {
   id: number
@@ -25,20 +30,10 @@ export const listBudgets = createServerFn({ method: 'GET' })
     const userId = await getUserIdFromSession()
     if (!userId) throw new Error('Not authenticated')
 
-    const data = await graphqlRequest<{ budget_buckets: BudgetBucket[] }>(`
-      query GetBudgetBuckets($userId: ID!) {
-        budget_buckets(userId: $userId) {
-          id
-          bucket_id
-          name
-          monthly_limit
-          color
-          is_active
-          created_at
-          updated_at
-        }
-      }
-    `, { userId })
+    const data = await graphqlRequest<{ budget_buckets: BudgetBucket[] }>(
+      GetBudgetBucketsDocument,
+      { userId }
+    )
     return data.budget_buckets
   })
 
@@ -49,20 +44,7 @@ export const getBudget = createServerFn({ method: 'GET' })
     if (!userId) throw new Error('Not authenticated')
 
     const result = await graphqlRequest<{ budget_bucket: BudgetBucket }>(
-      `
-      query GetBudgetBucket($userId: ID!, $bucketId: String!) {
-        budget_bucket(userId: $userId, bucket_id: $bucketId) {
-          id
-          bucket_id
-          name
-          monthly_limit
-          color
-          is_active
-          created_at
-          updated_at
-        }
-      }
-    `,
+      GetBudgetBucketDocument,
       { userId, bucketId: data.bucketId }
     )
     return result.budget_bucket
@@ -82,20 +64,7 @@ export const updateBudget = createServerFn({ method: 'POST' })
     if (!userId) throw new Error('Not authenticated')
 
     const result = await graphqlRequest<{ update_budget_bucket: BudgetBucket }>(
-      `
-      mutation UpdateBudgetBucket($userId: ID!, $bucketId: String!, $input: UpdateBudgetBucketInput!) {
-        update_budget_bucket(userId: $userId, bucket_id: $bucketId, input: $input) {
-          id
-          bucket_id
-          name
-          monthly_limit
-          color
-          is_active
-          created_at
-          updated_at
-        }
-      }
-    `,
+      UpdateBudgetBucketDocument,
       { userId, bucketId: data.bucketId, input: data.input }
     )
     return result.update_budget_bucket

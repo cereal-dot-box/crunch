@@ -1,0 +1,40 @@
+query SplitwiseAuthorizeUrl($userId: ID!) {
+  splitwise_authorize_url(userId: $userId) {
+    url
+  }
+}
+
+query SplitwiseCredential($userId: ID!) {
+  splitwise_credential(userId: $userId) {
+    id
+    user_id
+    splitwise_user_id
+    created_at
+    updated_at
+  }
+}
+
+query SplitwiseGroups($userId: ID!) {
+  splitwise_groups(userId: $userId) {
+    id
+    name
+    updated_at
+    members {
+      id
+      first_name
+      last_name
+      email
+    }
+  }
+}
+
+query SplitwiseSettings($userId: ID!) {
+  splitwise_settings(userId: $userId) {
+    id
+    user_id
+    included_group_ids
+    auto_sync_enabled
+    created_at
+    updated_at
+  }
+}

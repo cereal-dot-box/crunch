@@ -1,0 +1,19 @@
+mutation DeactivateAccount($userId: ID!, $account_id: Int!) {
+  deactivate_account(userId: $userId, account_id: $account_id)
+}
+
+mutation AddAccount($userId: ID!, $input: AddAccountInput!) {
+  add_account(userId: $userId, input: $input) {
+    id
+    name
+    bank
+    type
+    mask
+    current_balance
+    available_balance
+    iso_currency_code
+    is_active
+    created_at
+    updated_at
+  }
+}

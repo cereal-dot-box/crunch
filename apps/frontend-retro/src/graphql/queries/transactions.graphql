@@ -1,0 +1,57 @@
+query Transactions($userId: ID!, $limit: Int, $offset: Int) {
+  transactions(userId: $userId, limit: $limit, offset: $offset) {
+    transactions {
+      id
+      transaction_id
+      account_id
+      amount
+      iso_currency_code
+      date
+      authorized_date
+      name
+      merchant_name
+      pending
+      payment_channel
+      created_at
+    }
+    total
+  }
+}
+
+query TransactionsByAccount($userId: ID!, $account_id: Int!, $limit: Int, $offset: Int) {
+  transactions_by_account(userId: $userId, account_id: $account_id, limit: $limit, offset: $offset) {
+    transactions {
+      id
+      transaction_id
+      account_id
+      amount
+      iso_currency_code
+      date
+      authorized_date
+      name
+      merchant_name
+      pending
+      payment_channel
+      created_at
+    }
+    total
+  }
+}
+
+query Transaction($userId: ID!, $id: Int!) {
+  transaction(userId: $userId, id: $id) {
+    id
+    transaction_id
+    account_id
+    amount
+    iso_currency_code
+    date
+    authorized_date
+    name
+    merchant_name
+    pending
+    payment_channel
+    created_at
+    updated_at
+  }
+}

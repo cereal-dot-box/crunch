@@ -1,0 +1,50 @@
+mutation CreateMonthlyPeriod($userId: ID!, $input: CreateMonthlyPeriodInput!) {
+  create_monthly_period(userId: $userId, input: $input) {
+    id
+    user_id
+    month
+    projected_income
+    actual_income
+    status
+    notes
+    created_at
+    updated_at
+    is_open
+  }
+}
+
+mutation UpdateMonthlyPeriod($userId: ID!, $id: Int!, $input: UpdateMonthlyPeriodInput!) {
+  update_monthly_period(userId: $userId, id: $id, input: $input) {
+    id
+    user_id
+    month
+    projected_income
+    actual_income
+    status
+    notes
+    created_at
+    updated_at
+    is_open
+    is_closed
+  }
+}
+
+mutation CloseMonthlyPeriod($userId: ID!, $id: Int!) {
+  close_monthly_period(userId: $userId, id: $id) {
+    id
+    user_id
+    month
+    projected_income
+    actual_income
+    status
+    notes
+    created_at
+    updated_at
+    is_open
+    is_closed
+  }
+}
+
+mutation DeleteMonthlyPeriod($userId: ID!, $id: Int!) {
+  delete_monthly_period(userId: $userId, id: $id)
+}

@@ -1,0 +1,15 @@
+query Accounts($userId: ID!) {
+  accounts(userId: $userId) {
+    id
+    name
+    bank
+    type
+    mask
+    current_balance
+    available_balance
+    iso_currency_code
+    is_active
+    created_at
+    updated_at
+  }
+}

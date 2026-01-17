@@ -2,6 +2,15 @@ import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { zodValidator } from '@tanstack/zod-adapter'
 import { graphqlRequest, getUserIdFromSession } from './graphql'
+import {
+  GetMonthlyPeriodsDocument,
+  GetCurrentMonthlyPeriodDocument,
+  GetMonthlyPeriodDocument,
+  CreateMonthlyPeriodDocument,
+  UpdateMonthlyPeriodDocument,
+  CloseMonthlyPeriodDocument,
+  DeleteMonthlyPeriodDocument,
+} from '../graphql/graphql'
 
 export interface MonthlyPeriod {
   id: number
@@ -35,23 +44,10 @@ export const listMonthlyPeriods = createServerFn({ method: 'GET' })
     const userId = await getUserIdFromSession()
     if (!userId) throw new Error('Not authenticated')
 
-    const data = await graphqlRequest<{ monthly_periods: MonthlyPeriod[] }>(`
-      query GetMonthlyPeriods($userId: ID!) {
-        monthly_periods(userId: $userId) {
-          id
-          user_id
-          month
-          projected_income
-          actual_income
-          status
-          notes
-          created_at
-          updated_at
-          is_open
-          is_closed
-        }
-      }
-    `, { userId })
+    const data = await graphqlRequest<{ monthly_periods: MonthlyPeriod[] }>(
+      GetMonthlyPeriodsDocument,
+      { userId }
+    )
     return data.monthly_periods
   })
 
@@ -60,22 +56,10 @@ export const getCurrentPeriod = createServerFn({ method: 'GET' })
     const userId = await getUserIdFromSession()
     if (!userId) throw new Error('Not authenticated')
 
-    const data = await graphqlRequest<{ current_monthly_period: MonthlyPeriod | null }>(`
-      query GetCurrentMonthlyPeriod($userId: ID!) {
-        current_monthly_period(userId: $userId) {
-          id
-          user_id
-          month
-          projected_income
-          actual_income
-          status
-          notes
-          created_at
-          updated_at
-          is_open
-        }
-      }
-    `, { userId })
+    const data = await graphqlRequest<{ current_monthly_period: MonthlyPeriod | null }>(
+      GetCurrentMonthlyPeriodDocument,
+      { userId }
+    )
     return data.current_monthly_period
   })
 
@@ -86,23 +70,7 @@ export const getMonthlyPeriod = createServerFn({ method: 'GET' })
     if (!userId) throw new Error('Not authenticated')
 
     const result = await graphqlRequest<{ monthly_period: MonthlyPeriod }>(
-      `
-      query GetMonthlyPeriod($userId: ID!, $month: String!) {
-        monthly_period(userId: $userId, month: $month) {
-          id
-          user_id
-          month
-          projected_income
-          actual_income
-          status
-          notes
-          created_at
-          updated_at
-          is_open
-          is_closed
-        }
-      }
-    `,
+      GetMonthlyPeriodDocument,
       { userId, month: data.month }
     )
     return result.monthly_period
@@ -119,22 +87,7 @@ export const createMonthlyPeriod = createServerFn({ method: 'POST' })
     if (!userId) throw new Error('Not authenticated')
 
     const result = await graphqlRequest<{ create_monthly_period: MonthlyPeriod }>(
-      `
-      mutation CreateMonthlyPeriod($userId: ID!, $input: CreateMonthlyPeriodInput!) {
-        create_monthly_period(userId: $userId, input: $input) {
-          id
-          user_id
-          month
-          projected_income
-          actual_income
-          status
-          notes
-          created_at
-          updated_at
-          is_open
-        }
-      }
-    `,
+      CreateMonthlyPeriodDocument,
       { userId, input }
     )
     return result.create_monthly_period
@@ -155,23 +108,7 @@ export const updateMonthlyPeriod = createServerFn({ method: 'POST' })
     if (!userId) throw new Error('Not authenticated')
 
     const result = await graphqlRequest<{ update_monthly_period: MonthlyPeriod }>(
-      `
-      mutation UpdateMonthlyPeriod($userId: ID!, $id: Int!, $input: UpdateMonthlyPeriodInput!) {
-        update_monthly_period(userId: $userId, id: $id, input: $input) {
-          id
-          user_id
-          month
-          projected_income
-          actual_income
-          status
-          notes
-          created_at
-          updated_at
-          is_open
-          is_closed
-        }
-      }
-    `,
+      UpdateMonthlyPeriodDocument,
       { userId, id: data.id, input: data.input }
     )
     return result.update_monthly_period
@@ -184,23 +121,7 @@ export const closeMonthlyPeriod = createServerFn({ method: 'POST' })
     if (!userId) throw new Error('Not authenticated')
 
     const result = await graphqlRequest<{ close_monthly_period: MonthlyPeriod }>(
-      `
-      mutation CloseMonthlyPeriod($userId: ID!, $id: Int!) {
-        close_monthly_period(userId: $userId, id: $id) {
-          id
-          user_id
-          month
-          projected_income
-          actual_income
-          status
-          notes
-          created_at
-          updated_at
-          is_open
-          is_closed
-        }
-      }
-    `,
+      CloseMonthlyPeriodDocument,
       { userId, id: data.id }
     )
     return result.close_monthly_period
@@ -213,11 +134,7 @@ export const deleteMonthlyPeriod = createServerFn({ method: 'POST' })
     if (!userId) throw new Error('Not authenticated')
 
     const result = await graphqlRequest<{ delete_monthly_period: boolean }>(
-      `
-      mutation DeleteMonthlyPeriod($userId: ID!, $id: Int!) {
-        delete_monthly_period(userId: $userId, id: $id)
-      }
-    `,
+      DeleteMonthlyPeriodDocument,
       { userId, id: data.id }
     )
     return result.delete_monthly_period

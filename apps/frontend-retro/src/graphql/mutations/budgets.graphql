@@ -1,0 +1,12 @@
+mutation UpdateBudgetBucket($userId: ID!, $bucketId: String!, $input: UpdateBudgetBucketInput!) {
+  update_budget_bucket(userId: $userId, bucket_id: $bucketId, input: $input) {
+    id
+    bucket_id
+    name
+    monthly_limit
+    color
+    is_active
+    created_at
+    updated_at
+  }
+}

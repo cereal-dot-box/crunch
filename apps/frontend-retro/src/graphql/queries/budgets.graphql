@@ -1,0 +1,25 @@
+query GetBudgetBuckets($userId: ID!) {
+  budget_buckets(userId: $userId) {
+    id
+    bucket_id
+    name
+    monthly_limit
+    color
+    is_active
+    created_at
+    updated_at
+  }
+}
+
+query GetBudgetBucket($userId: ID!, $bucketId: String!) {
+  budget_bucket(userId: $userId, bucket_id: $bucketId) {
+    id
+    bucket_id
+    name
+    monthly_limit
+    color
+    is_active
+    created_at
+    updated_at
+  }
+}

@@ -1,0 +1,24 @@
+mutation SplitwiseCompleteOAuth($userId: ID!, $code: String!, $state: String!) {
+  splitwise_complete_oauth(userId: $userId, code: $code, state: $state) {
+    id
+    user_id
+    splitwise_user_id
+    created_at
+    updated_at
+  }
+}
+
+mutation SplitwiseDisconnect($userId: ID!) {
+  splitwise_disconnect(userId: $userId)
+}
+
+mutation SplitwiseUpdateSettings($userId: ID!, $input: UpdateSplitwiseSettingsInput!) {
+  splitwise_update_settings(userId: $userId, input: $input) {
+    id
+    user_id
+    included_group_ids
+    auto_sync_enabled
+    created_at
+    updated_at
+  }
+}

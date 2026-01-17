@@ -3,6 +3,11 @@ import { z } from 'zod'
 import { zodValidator } from '@tanstack/zod-adapter'
 import type { Transaction } from '../types'
 import { graphqlRequest, getUserIdFromSession } from './graphql'
+import {
+  TransactionsDocument,
+  TransactionsByAccountDocument,
+  TransactionDocument,
+} from '../graphql/graphql'
 
 interface TransactionListResponse {
   transactions: Transaction[]
@@ -18,27 +23,7 @@ export const listTransactions = createServerFn({ method: 'GET' })
     const limit = data?.limit ?? 50
     const offset = data?.offset ?? 0
     const result = await graphqlRequest<{ transactions: TransactionListResponse }>(
-      `
-      query Transactions($userId: ID!, $limit: Int, $offset: Int) {
-        transactions(userId: $userId, limit: $limit, offset: $offset) {
-          transactions {
-            id
-            transaction_id
-            account_id
-            amount
-            iso_currency_code
-            date
-            authorized_date
-            name
-            merchant_name
-            pending
-            payment_channel
-            created_at
-          }
-          total
-        }
-      }
-    `,
+      TransactionsDocument,
       { userId, limit, offset }
     )
     return result.transactions
@@ -57,27 +42,7 @@ export const listTransactionsByAccount = createServerFn({ method: 'GET' })
     const limit = data.limit ?? 50
     const offset = data.offset ?? 0
     const result = await graphqlRequest<{ transactions_by_account: TransactionListResponse }>(
-      `
-      query TransactionsByAccount($userId: ID!, $account_id: Int!, $limit: Int, $offset: Int) {
-        transactions_by_account(userId: $userId, account_id: $account_id, limit: $limit, offset: $offset) {
-          transactions {
-            id
-            transaction_id
-            account_id
-            amount
-            iso_currency_code
-            date
-            authorized_date
-            name
-            merchant_name
-            pending
-            payment_channel
-            created_at
-          }
-          total
-        }
-      }
-    `,
+      TransactionsByAccountDocument,
       { userId, account_id: data.accountId, limit, offset }
     )
     return result.transactions_by_account
@@ -90,25 +55,7 @@ export const getTransaction = createServerFn({ method: 'GET' })
     if (!userId) throw new Error('Not authenticated')
 
     const result = await graphqlRequest<{ transaction: Transaction | null }>(
-      `
-      query Transaction($userId: ID!, $id: Int!) {
-        transaction(userId: $userId, id: $id) {
-          id
-          transaction_id
-          account_id
-          amount
-          iso_currency_code
-          date
-          authorized_date
-          name
-          merchant_name
-          pending
-          payment_channel
-          created_at
-          updated_at
-        }
-      }
-    `,
+      TransactionDocument,
       { userId, id: data.id }
     )
     return result.transaction

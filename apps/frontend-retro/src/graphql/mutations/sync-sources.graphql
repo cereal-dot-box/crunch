@@ -1,0 +1,58 @@
+mutation AddSyncSource($userId: ID!, $input: AddSyncSourceInput!) {
+  add_sync_source(userId: $userId, input: $input) {
+    id
+    account_id
+    name
+    email_address
+    imap_host
+    imap_port
+    imap_folder
+    status
+    last_synced_at
+    last_processed_uid
+    is_active
+    created_at
+    balance_count
+    transaction_count
+  }
+}
+
+mutation UpdateSyncSource($userId: ID!, $id: Int!, $input: UpdateSyncSourceInput!) {
+  update_sync_source(userId: $userId, id: $id, input: $input) {
+    id
+    account_id
+    name
+    email_address
+    imap_host
+    imap_port
+    imap_folder
+    status
+    last_synced_at
+    last_processed_uid
+    is_active
+    created_at
+    balance_count
+    transaction_count
+  }
+}
+
+mutation DeleteSyncSource($userId: ID!, $id: Int!) {
+  delete_sync_source(userId: $userId, id: $id)
+}
+
+mutation TestSyncSourceConnection($userId: ID!, $id: Int!) {
+  test_sync_source_connection(userId: $userId, id: $id) {
+    success
+    error_message
+  }
+}
+
+mutation SyncSyncSource($userId: ID!, $id: Int!) {
+  sync_sync_source(userId: $userId, id: $id) {
+    timestamp
+    emails_fetched
+    jobs_enqueued
+    errors
+    duration
+  }
+}

@@ -1,0 +1,46 @@
+query GetMonthlyPeriods($userId: ID!) {
+  monthly_periods(userId: $userId) {
+    id
+    user_id
+    month
+    projected_income
+    actual_income
+    status
+    notes
+    created_at
+    updated_at
+    is_open
+    is_closed
+  }
+}
+
+query GetCurrentMonthlyPeriod($userId: ID!) {
+  current_monthly_period(userId: $userId) {
+    id
+    user_id
+    month
+    projected_income
+    actual_income
+    status
+    notes
+    created_at
+    updated_at
+    is_open
+  }
+}
+
+query GetMonthlyPeriod($userId: ID!, $month: String!) {
+  monthly_period(userId: $userId, month: $month) {
+    id
+    user_id
+    month
+    projected_income
+    actual_income
+    status
+    notes
+    created_at
+    updated_at
+    is_open
+    is_closed
+  }
+}
