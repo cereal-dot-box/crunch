@@ -1,9 +1,13 @@
 import type { CodegenConfig } from '@graphql-codegen/cli';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const config: CodegenConfig = {
-  schema: 'edit-this',
+  schema: path.join(__dirname, '../../apps/backend/src/graphql/schema.graphql'),
   documents: [
-    'edit-this',
+    path.join(__dirname, 'src/graphql', '**', '*.graphql'),
   ],
   generates: {
     'src/graphql/': {
