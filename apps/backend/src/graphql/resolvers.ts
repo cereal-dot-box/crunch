@@ -1,4 +1,16 @@
 import type { MercuriusContext } from 'mercurius';
+import type {
+  UpdateBudgetBucketInput,
+  AddAccountInput,
+  AddSyncSourceInput,
+  UpdateSyncSourceInput,
+  CreateMonthlyPeriodInput,
+  UpdateMonthlyPeriodInput,
+  UpdateSplitwiseSettingsInput,
+  Resolvers,
+  QueryTransactions_By_AccountArgs,
+  QueryTransactionsArgs,
+} from './types.generated.js';
 import { BudgetBucket } from '../models/budget-bucket';
 import { Account } from '../models/account';
 import { BalanceUpdate } from '../models/balance-update';
@@ -16,65 +28,12 @@ import { loggers } from '../lib/logger';
 
 const log = loggers.graphql;
 
-interface Context extends MercuriusContext {
+export interface Context extends MercuriusContext {
   isAuthenticated: boolean;
   serviceClient?: string;
 }
 
-interface UpdateBudgetBucketInput {
-  name?: string;
-  monthly_limit?: number;
-  color?: string;
-}
-
-interface AddAccountInput {
-  name: string;
-  bank: string;
-  type: string;
-  mask: string;
-  iso_currency_code: string;
-}
-
-interface AddSyncSourceInput {
-  account_id: number;
-  name: string;
-  type: string;
-  email_address: string;
-  imap_host: string;
-  imap_port: number;
-  imap_password: string;
-  imap_folder?: string;
-}
-
-interface UpdateSyncSourceInput {
-  name?: string;
-  type?: string;
-  email_address?: string;
-  imap_host?: string;
-  imap_port?: number;
-  imap_password?: string;
-  imap_folder?: string;
-}
-
-interface CreateMonthlyPeriodInput {
-  month: string;
-  projected_income: number;
-  notes?: string | null;
-}
-
-interface UpdateMonthlyPeriodInput {
-  projected_income?: number;
-  actual_income?: number;
-  status?: string;
-  notes?: string | null;
-}
-
-interface UpdateSplitwiseSettingsInput {
-  included_group_ids?: number[];
-  auto_sync_enabled?: boolean;
-}
-
-export const resolvers = {
+export const resolvers: Resolvers = {
   Query: {
     accounts: async (_parent: any, { userId }: { userId: string }, context: Context) => {
       if (!context.isAuthenticated) throw new Error('Unauthorized');
@@ -148,7 +107,7 @@ export const resolvers = {
 
     transactions_by_account: async (
       _parent: any,
-      { userId, account_id, limit, offset }: { userId: string; account_id: number; limit?: number; offset?: number },
+      { userId, account_id, limit, offset }: QueryTransactions_By_AccountArgs,
       context: Context
     ) => {
       if (!context.isAuthenticated) throw new Error('Unauthorized');
@@ -170,7 +129,7 @@ export const resolvers = {
 
     transactions: async (
       _parent: any,
-      { userId, limit, offset }: { userId: string; limit?: number; offset?: number },
+      { userId, limit, offset }: QueryTransactionsArgs,
       context: Context
     ) => {
       if (!context.isAuthenticated) throw new Error('Unauthorized');
@@ -398,6 +357,8 @@ export const resolvers = {
 
       return {
         ...account,
+        is_active: account.is_active === 1,
+        updated_at: account.updated_at ?? '',
         available_balance: null,
         current_balance: null,
       };
@@ -452,6 +413,7 @@ export const resolvers = {
 
       return {
         ...syncSource,
+        is_active: syncSource.is_active === 1,
         balance_count: 0,
         transaction_count: 0,
       };
@@ -471,11 +433,11 @@ export const resolvers = {
       }
 
       // Validation for optional fields
-      if (input.email_address !== undefined && !input.email_address.includes('@')) {
+      if (input.email_address != null && !input.email_address.includes('@')) {
         throw new Error('Valid email address is required');
       }
 
-      if (input.imap_port !== undefined && (input.imap_port < 1 || input.imap_port > 65535)) {
+      if (input.imap_port != null && (input.imap_port < 1 || input.imap_port > 65535)) {
         throw new Error('Valid IMAP port is required (1-65535)');
       }
 
@@ -547,19 +509,19 @@ export const resolvers = {
       if (!context.isAuthenticated) throw new Error('Unauthorized');
 
       // Validation
-      if (input.name !== undefined) {
+      if (input.name != null) {
         if (input.name.length < 1 || input.name.length > 50) {
           throw new Error('Name must be between 1 and 50 characters');
         }
       }
 
-      if (input.monthly_limit !== undefined) {
+      if (input.monthly_limit != null) {
         if (input.monthly_limit <= 0) {
           throw new Error('Monthly limit must be greater than 0');
         }
       }
 
-      if (input.color !== undefined) {
+      if (input.color != null) {
         const validColorPattern =
           /^bg-(gray|red|orange|yellow|green|blue|indigo|purple|pink)-(50|100|200|300|400|500|600|700|800|900)$/;
         if (!validColorPattern.test(input.color)) {
@@ -567,7 +529,11 @@ export const resolvers = {
         }
       }
 
-      const updated = await BudgetBucket.update(userId, bucket_id, input);
+      const updated = await BudgetBucket.update(userId, bucket_id, {
+        name: input.name ?? undefined,
+        monthly_limit: input.monthly_limit ?? undefined,
+        color: input.color ?? undefined,
+      });
 
       if (!updated) {
         throw new Error('Budget bucket not found');
@@ -622,22 +588,22 @@ export const resolvers = {
       }
 
       // Validation: Can't modify projected_income of closed periods
-      if (existing.isClosed && input.projected_income !== undefined) {
+      if (existing.isClosed && input.projected_income != null) {
         throw new Error('Cannot modify projected income of a closed monthly period');
       }
 
       // Validate projected income if provided
-      if (input.projected_income !== undefined && input.projected_income < 0) {
+      if (input.projected_income != null && input.projected_income < 0) {
         throw new Error('Projected income must be a non-negative number');
       }
 
       // Validate actual income if provided
-      if (input.actual_income !== undefined && input.actual_income < 0) {
+      if (input.actual_income != null && input.actual_income < 0) {
         throw new Error('Actual income must be a non-negative number');
       }
 
       // Validate status if provided
-      if (input.status !== undefined && !['open', 'closed'].includes(input.status)) {
+      if (input.status != null && !['open', 'closed'].includes(input.status)) {
         throw new Error('Status must be either "open" or "closed"');
       }
 

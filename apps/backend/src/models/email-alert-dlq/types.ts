@@ -2,7 +2,7 @@ export type DLQErrorType = 'PARSE_ERROR' | 'NO_PARSER' | 'VALIDATION_ERROR' | 'N
 
 export interface EmailAlertDLQRow {
   id: number;
-  user_id: number;
+  user_id: string;
   sync_source_id: number;
   message_uid: string | null;
   subject: string | null;
@@ -17,7 +17,7 @@ export interface EmailAlertDLQRow {
 }
 
 export interface CreateDLQEntryParams {
-  userId: number;
+  userId: string;
   syncSourceId: number;
   messageUid?: string | null;
   subject?: string | null;

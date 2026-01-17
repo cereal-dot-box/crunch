@@ -31,7 +31,7 @@ input UpdateBudgetBucketInput {
 
 type MonthlyPeriod {
   id: Int!
-  user_id: Int!
+  user_id: ID!
   month: String!
   projected_income: Float!
   actual_income: Float!
@@ -109,15 +109,15 @@ type SyncResult {
 
 type SplitwiseCredential {
   id: Int!
-  user_id: String!
-  splitwise_user_id: String!
+  user_id: ID!
+  splitwise_user_id: ID!
   created_at: String!
   updated_at: String!
 }
 
 type SplitwiseSetting {
   id: Int!
-  user_id: String!
+  user_id: ID!
   included_group_ids: [Int!]!
   auto_sync_enabled: Boolean!
   created_at: String!

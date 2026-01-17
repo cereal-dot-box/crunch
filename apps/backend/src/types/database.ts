@@ -76,7 +76,7 @@ export interface EmailAlertDLQTable {
   body_text: string | null;
   body_html: string | null;
   error_message: string;
-  error_type: 'PARSE_ERROR' | 'NO_PARSER' | 'VALIDATION_ERROR' | 'NO_ACCOUNT';
+  error_type: 'PARSE_ERROR' | 'NO_PARSER' | 'VALIDATION_ERROR' | 'NO_ACCOUNT' | 'UNSUPPORTED_TYPE';
   error_stack: string | null;
   created_at: ColumnType<string, string | undefined, never>;
 }
@@ -131,7 +131,7 @@ export interface SyncSourceTable {
   id: ColumnType<number, never, never>;
   account_id: number;
   name: string; // e.g., 'bmo cc balance', 'bmo cc transactions'
-  type: string; // 'balance', 'transactions'
+  type: string | null; // 'balance', 'transactions' - nullable for backward compatibility
   bank: string | null;
   account_type: string | null;
   email_address: string;

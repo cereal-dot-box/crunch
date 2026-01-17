@@ -19,8 +19,12 @@ export class BudgetBucket {
   get createdAt() { return this.data.created_at; }
   get updatedAt() { return this.data.updated_at; }
 
-  toJSON(): BudgetBucketRow {
-    return { ...this.data };
+  toJSON(): Omit<BudgetBucketRow, 'is_active' | 'updated_at'> & { is_active: boolean; updated_at: string } {
+    return {
+      ...this.data,
+      is_active: this.isActive,
+      updated_at: this.data.updated_at ?? '',
+    };
   }
 }
 

@@ -5,7 +5,7 @@ export class MonthlyPeriod {
   static getByUserId: (userId: string) => Promise<MonthlyPeriod[]>;
   static getByMonth: (userId: string, month: string) => Promise<MonthlyPeriod | null>;
   static getById: (id: number, userId: string) => Promise<MonthlyPeriod | null>;
-  static create: (params: CreateMonthlyPeriodParams) => Promise<MonthlyPeriodRow>;
+  static create: (params: CreateMonthlyPeriodParams) => Promise<MonthlyPeriodRow & { is_open: boolean; is_closed: boolean }>;
   static update: (id: number, userId: string, params: UpdateMonthlyPeriodParams) => Promise<MonthlyPeriod | null>;
   static close: (id: number, userId: string) => Promise<MonthlyPeriod | null>;
   static delete: (id: number, userId: string) => Promise<void>;
@@ -25,7 +25,7 @@ export class MonthlyPeriod {
   get isOpen() { return this.data.status === 'open'; }
   get isClosed() { return this.data.status === 'closed'; }
 
-  toJSON(): MonthlyPeriodRow {
+  toJSON(): MonthlyPeriodRow & { is_open: boolean; is_closed: boolean } {
     return {
       ...this.data,
       is_open: this.isOpen,
@@ -50,7 +50,7 @@ MonthlyPeriod.getById = async (id: number, userId: string): Promise<MonthlyPerio
   return row ? new MonthlyPeriod(row) : null;
 };
 
-MonthlyPeriod.create = async (params: CreateMonthlyPeriodParams): Promise<MonthlyPeriodRow> => {
+MonthlyPeriod.create = async (params: CreateMonthlyPeriodParams): Promise<MonthlyPeriodRow & { is_open: boolean; is_closed: boolean }> => {
   const row = await repo.createMonthlyPeriod(params);
   return {
     ...row,

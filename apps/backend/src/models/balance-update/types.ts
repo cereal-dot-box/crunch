@@ -1,6 +1,6 @@
 export interface BalanceUpdateRow {
   id: number;
-  user_id: number;
+  user_id: string;
   account_id: number;
   processed_email_id: number | null;
   sync_source_id: number | null;
@@ -13,7 +13,7 @@ export interface BalanceUpdateRow {
 }
 
 export interface CreateBalanceUpdateParams {
-  userId: number;
+  userId: string;
   accountId: number;
   processedEmailId?: number | null;
   syncSourceId?: number | null;

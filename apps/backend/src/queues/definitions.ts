@@ -36,7 +36,7 @@ export function getQueue(name: string): Queue {
   if (!queues.has(name)) {
     const redis = getRedis();
     const queue = new Queue(name, {
-      connection: redis,
+      connection: redis as any,
       defaultJobOptions: DEFAULT_JOB_OPTIONS,
     });
 

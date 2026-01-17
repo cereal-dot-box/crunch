@@ -1,6 +1,6 @@
 export interface BudgetBucketRow {
   id: number;
-  user_id: number;
+  user_id: string;
   bucket_id: string;
   name: string;
   monthly_limit: number;
@@ -11,7 +11,7 @@ export interface BudgetBucketRow {
 }
 
 export interface CreateBudgetBucketParams {
-  userId: number;
+  userId: string;
   bucketId: string;
   name: string;
   monthlyLimit: number;

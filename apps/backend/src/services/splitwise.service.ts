@@ -12,6 +12,7 @@ export interface SplitwiseTokenResponse {
   token_type: string;
   refresh_token?: string;
   expires_in?: number;
+  error?: string;
 }
 
 export interface SplitwiseUser {

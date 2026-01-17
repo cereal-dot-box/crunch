@@ -54,14 +54,14 @@ export async function processEmailJob(
 
     // Use content-based parser detection
     const parserService = getEmailParserService();
-    const parser = parserService.getParser(emailData);
+    const parser = parserService.getParser(emailData as any);
 
     if (!parser) {
       console.log(message.bodyText)
       throw new Error(`No parser available for this email type`);
     }
 
-    const parseResult = parser.parse(emailData);
+    const parseResult = parser.parse(emailData as any);
 
     if (!parseResult) {
       throw new Error(`Parser failed for ${source.bank}:${source.accountType}`);
@@ -186,7 +186,7 @@ export function createEmailProcessWorker(): Worker<EmailProcessJobData> {
       return result;
     },
     {
-      connection: redis,
+      connection: redis as any,
       concurrency: 5, // Process up to 5 emails concurrently
       limiter: {
         max: 100, // Max 100 jobs per window

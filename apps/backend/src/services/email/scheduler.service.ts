@@ -124,7 +124,7 @@ export class EmailSchedulerService {
   /**
    * Manually trigger a sync for a specific sync source
    */
-  async triggerSync(syncSourceId: number, userId: number): Promise<void> {
+  async triggerSync(syncSourceId: number, userId: string): Promise<void> {
     log.info({ syncSourceId }, 'Manually triggering sync');
     const result = await this.syncService.syncAndProcessSyncSource(syncSourceId, userId);
     log.info({

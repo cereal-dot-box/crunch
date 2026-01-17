@@ -6,7 +6,6 @@ export class SyncSource {
 
   get id() { return this.data.id; }
   get name() { return this.data.name; }
-  get type() { return this.data.type; }
   get bank() { return this.data.bank; }
   get accountType() { return this.data.account_type; }
   get accountId() { return this.data.account_id; }
@@ -18,8 +17,11 @@ export class SyncSource {
   get lastSyncedAt() { return this.data.last_synced_at; }
   get isActive() { return this.data.is_active === 1; }
 
-  toJSON(): SyncSourceRow {
-    return { ...this.data };
+  toJSON(): SyncSourceRow & { is_active: boolean } {
+    return {
+      ...this.data,
+      is_active: this.isActive,
+    };
   }
 
   static getByAccountId: (accountId: number) => Promise<SyncSource[]>;

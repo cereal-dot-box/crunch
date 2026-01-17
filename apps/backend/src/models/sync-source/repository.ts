@@ -10,7 +10,6 @@ export async function createSyncSource(params: CreateSyncSourceParams) {
     .values({
       account_id: params.accountId,
       name: params.name,
-      type: params.type,
       bank: params.bank,
       account_type: params.accountType,
       email_address: params.emailAddress,
@@ -25,7 +24,7 @@ export async function createSyncSource(params: CreateSyncSourceParams) {
     .executeTakeFirstOrThrow();
 }
 
-export async function getSyncSourcesByUserId(userId: number): Promise<SyncSourceRow[]> {
+export async function getSyncSourcesByUserId(userId: string): Promise<SyncSourceRow[]> {
   return await db
     .selectFrom('SyncSource')
     .innerJoin('Account', 'Account.id', 'SyncSource.account_id')
@@ -44,7 +43,7 @@ export async function getSyncSourcesByAccountId(accountId: number): Promise<Sync
     .execute();
 }
 
-export async function getSyncSourceById(id: number, userId: number): Promise<SyncSourceRow | undefined> {
+export async function getSyncSourceById(id: number, userId: string): Promise<SyncSourceRow | undefined> {
   return await db
     .selectFrom('SyncSource')
     .innerJoin('Account', 'Account.id', 'SyncSource.account_id')
@@ -87,7 +86,7 @@ export async function updateSyncSourceLastSynced(
     .execute();
 }
 
-export async function getActiveSyncSources(userId: number): Promise<SyncSourceRow[]> {
+export async function getActiveSyncSources(userId: string): Promise<SyncSourceRow[]> {
   return await db
     .selectFrom('SyncSource')
     .innerJoin('Account', 'Account.id', 'SyncSource.account_id')
@@ -98,7 +97,7 @@ export async function getActiveSyncSources(userId: number): Promise<SyncSourceRo
     .execute();
 }
 
-export async function deleteSyncSource(id: number, userId: number) {
+export async function deleteSyncSource(id: number, userId: string) {
   return await db
     .deleteFrom('SyncSource')
     .using('Account')
@@ -109,7 +108,7 @@ export async function deleteSyncSource(id: number, userId: number) {
 
 export async function updateSyncSource(
   id: number,
-  userId: number,
+  userId: string,
   params: UpdateSyncSourceParams
 ): Promise<SyncSourceRow | undefined> {
   // First verify the sync source exists and belongs to the user
@@ -121,7 +120,6 @@ export async function updateSyncSource(
   const updates: Record<string, any> = {};
 
   if (params.name !== undefined) updates.name = params.name;
-  if (params.type !== undefined) updates.type = params.type;
   if (params.emailAddress !== undefined) updates.email_address = params.emailAddress;
   if (params.imapHost !== undefined) updates.imap_host = params.imapHost;
   if (params.imapPort !== undefined) updates.imap_port = params.imapPort;

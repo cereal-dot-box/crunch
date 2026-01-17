@@ -1,6 +1,6 @@
 export interface MonthlyPeriodRow {
   id: number;
-  user_id: number;
+  user_id: string;
   month: string;
   projected_income: number; // What you expected
   actual_income: number; // What actually happened
@@ -13,7 +13,7 @@ export interface MonthlyPeriodRow {
 }
 
 export interface CreateMonthlyPeriodParams {
-  userId: number;
+  userId: string;
   month: string;
   projectedIncome: number;
   notes?: string | null;

@@ -1,6 +1,6 @@
 export interface TransactionRow {
   id: number;
-  user_id: number;
+  user_id: string;
   account_id: number;
   processed_email_id: number | null;
   sync_source_id: number | null;
@@ -18,7 +18,7 @@ export interface TransactionRow {
 }
 
 export interface CreateTransactionParams {
-  userId: number;
+  userId: string;
   accountId: number;
   syncSourceId?: number | null;
   processedEmailId?: number | null;

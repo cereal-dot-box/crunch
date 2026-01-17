@@ -1,6 +1,6 @@
 export interface ProcessedEmailsRow {
   id: number;
-  user_id: number;
+  user_id: string;
   sync_source_id: number;
   message_uid: string;
   content_hash: string | null;
@@ -8,7 +8,7 @@ export interface ProcessedEmailsRow {
 }
 
 export interface MarkEmailProcessedParams {
-  userId: number;
+  userId: string;
   syncSourceId: number;
   messageUid: string;
   contentHash?: string;

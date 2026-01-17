@@ -150,7 +150,10 @@ export function generateGraphQLTools(): {
   const toolHandlers: Record<string, (userId: string, args: any) => Promise<any>> = {};
   const toolSchemas: Record<string, any> = {};
 
-  const fields = queryType.getFields();
+  const fields = queryType?.getFields();
+  if (!fields) {
+    return { tools: [], toolHandlers: {}, toolSchemas: {} };
+  }
 
   for (const [fieldName, field] of Object.entries(fields)) {
     const tool = generateToolFromField(field);
@@ -170,5 +173,5 @@ export function generateGraphQLTools(): {
 if (require.main === module) {
   const { tools } = generateGraphQLTools();
   console.log('Generated MCP tools from GraphQL queries:');
-  console.log(tools.map((t) => `- ${t.name}: ${t.description.split('\n')[0]}`).join('\n'));
+  console.log(tools.map((t) => `- ${t.name}: ${(t.description || '').split('\n')[0]}`).join('\n'));
 }

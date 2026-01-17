@@ -8,7 +8,7 @@
  */
 export interface EmailProcessJobData {
   syncSourceId: number;
-  userId: number;
+  userId: string;
   message: {
     uid: string;
     subject: string;
@@ -25,7 +25,7 @@ export interface EmailProcessJobData {
  */
 export interface EmailFetchJobData {
   syncSourceId: number;
-  userId: number;
+  userId: string;
 }
 
 /**

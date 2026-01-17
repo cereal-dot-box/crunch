@@ -2,7 +2,7 @@ import type { ColumnType } from 'kysely';
 
 export interface AccountRow {
   id: number;
-  user_id: number;
+  user_id: string;
   name: string;
   bank: string | null;
   type: string | null;
@@ -14,7 +14,7 @@ export interface AccountRow {
 }
 
 export interface CreateAccountParams {
-  userId: number;
+  userId: string;
   name: string;
   bank: string | null;
   type: string | null;

@@ -22,7 +22,7 @@ export class EmailSyncService {
    */
   async syncAndProcessSyncSource(
     syncSourceId: number,
-    userId: number
+    userId: string
   ): Promise<SyncResult> {
     const startTime = Date.now();
 
@@ -148,7 +148,7 @@ export class EmailSyncService {
    */
   async syncSyncSource(
     syncSourceId: number,
-    userId: number
+    userId: string
   ): Promise<SyncResult> {
     return await this.syncAndProcessSyncSource(syncSourceId, userId);
   }
