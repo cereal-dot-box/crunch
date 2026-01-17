@@ -6,15 +6,15 @@ services:
       - crunch-dev-network
 
   backend:
-    build: ./backend
+    build: ./apps/backend
     container_name: crunch-backend-dev
     ports:
       - "3000:3000"
     volumes:
       - ./data:/app/data
-      - ./backend/src:/app/src
+      - ./apps/backend/src:/app/src
     env_file:
-      - ./backend/.env
+      - ./apps/backend/.env
     environment:
       - REDIS_URL=redis://redis:6379
       - NODE_ENV=development
@@ -25,30 +25,30 @@ services:
 
   frontend:
     build:
-      context: ./frontend
+      context: ./apps/frontend-retro
       target: development
     container_name: crunch-frontend-dev
     ports:
       - "5173:5173"
     volumes:
-      - ./frontend/src:/app/src
-      - ./frontend/public:/app/public
-      - ./frontend/index.html:/app/index.html
-      - ./frontend/package.json:/app/package.json
+      - ./apps/frontend-retro/src:/app/src
+      - ./apps/frontend-retro/public:/app/public
+      - ./apps/frontend-retro/index.html:/app/index.html
+      - ./apps/frontend-retro/package.json:/app/package.json
     environment:
       - VITE_API_URL=http://localhost:3000
     networks:
       - crunch-dev-network
 
   worker:
-    build: ./backend
+    build: ./apps/backend
     container_name: crunch-worker-dev
     command: ["bun", "run", "workers"]
     volumes:
       - ./data:/app/data
-      - ./backend/src:/app/src
+      - ./apps/backend/src:/app/src
     env_file:
-      - ./backend/.env
+      - ./apps/backend/.env
     environment:
       - REDIS_URL=redis://redis:6379
       - NODE_ENV=development

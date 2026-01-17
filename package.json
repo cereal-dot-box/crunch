@@ -1,0 +1,15 @@
+{
+  "name": "crunch-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev": "cd apps/backend && bun run dev",
+    "dev:backend": "cd apps/backend && bun run dev",
+    "dev:frontend": "cd apps/frontend-retro && bun run dev",
+    "start": "cd apps/backend && bun run start",
+    "workers": "cd apps/backend && bun run workers",
+    "migrate": "cd apps/backend && bun run migrate"
+  }
+}
