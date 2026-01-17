@@ -94,6 +94,22 @@ type SyncSource {
   transaction_count: Int
 }
 
+# Extended SyncSource type for scheduler (includes encrypted password)
+type SchedulerSyncSource {
+  id: Int!
+  name: String!
+  bank: String
+  accountType: String
+  accountId: Int!
+  emailAddress: String!
+  imapHost: String!
+  imapPort: Int!
+  imapPasswordEncrypted: String!
+  imapFolder: String!
+  lastProcessedUid: String
+  userId: ID!
+}
+
 type TestConnectionResult {
   success: Boolean!
   error_message: String
@@ -140,6 +156,55 @@ type SplitwiseGroupMember {
 
 type SplitwiseAuthorizeUrl {
   url: String!
+}
+
+# Worker types and mutations
+type ProcessedEmail {
+  id: Int!
+  messageUid: String!
+}
+
+input MarkEmailProcessedInput {
+  userId: ID!
+  syncSourceId: Int!
+  messageUid: String!
+}
+
+input CreateTransactionFromEmailInput {
+  userId: ID!
+  accountId: Int!
+  syncSourceId: Int!
+  processedEmailId: Int!
+  amount: Float!
+  transactionDate: String!
+  name: String!
+  merchantName: String
+}
+
+input CreateBalanceUpdateFromEmailInput {
+  userId: ID!
+  accountId: Int!
+  syncSourceId: Int!
+  processedEmailId: Int!
+  balanceType: String!
+  newBalance: Float!
+  updateSource: String!
+  sourceDetail: String!
+  updateDate: String!
+}
+
+input CreateDLQEntryInput {
+  userId: ID!
+  syncSourceId: Int!
+  messageUid: String!
+  subject: String!
+  fromAddress: String!
+  date: String!
+  bodyText: String!
+  bodyHtml: String
+  errorMessage: String!
+  errorType: String!
+  errorStack: String
 }
 
 type AvailableBankType {
@@ -192,11 +257,16 @@ type Query {
   sync_sources(userId: ID!): [SyncSource!]!
   sync_sources_by_account(userId: ID!, account_id: Int!): [SyncSource!]!
   sync_source(userId: ID!, id: Int!): SyncSource
+  # Query for scheduler to get all active sync sources (requires internal authentication)
+  activeSyncSources: [SchedulerSyncSource!]!
   available_bank_types: [AvailableBankType!]!
   splitwise_authorize_url(userId: ID!): SplitwiseAuthorizeUrl!
   splitwise_credential(userId: ID!): SplitwiseCredential
   splitwise_groups(userId: ID!): [SplitwiseGroup!]!
   splitwise_settings(userId: ID!): SplitwiseSetting!
+  # Worker queries (requires internal authentication)
+  processedEmail(syncSourceId: Int!, messageUid: String!): ProcessedEmail
+  workerSyncSource(id: Int!, userId: ID!): SchedulerSyncSource
 }
 
 type Mutation {
@@ -217,4 +287,9 @@ type Mutation {
   splitwise_complete_oauth(userId: ID!, code: String!, state: String!): SplitwiseCredential!
   splitwise_disconnect(userId: ID!): Boolean!
   splitwise_update_settings(userId: ID!, input: UpdateSplitwiseSettingsInput!): SplitwiseSetting!
+  # Worker mutations (requires internal authentication)
+  markEmailProcessed(input: MarkEmailProcessedInput!): ProcessedEmail!
+  createTransactionFromEmail(input: CreateTransactionFromEmailInput!): Transaction!
+  createBalanceUpdateFromEmail(input: CreateBalanceUpdateFromEmailInput!): Boolean!
+  createDLQEntry(input: CreateDLQEntryInput!): Boolean!
 }

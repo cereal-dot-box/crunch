@@ -7,8 +7,12 @@
   "scripts": {
     "dev": "cd apps/backend && bun run dev",
     "dev:backend": "cd apps/backend && bun run dev",
+    "dev:scheduler": "cd apps/scheduler && bun run dev",
+    "dev:worker": "cd apps/worker && bun run dev",
     "dev:frontend": "cd apps/frontend-retro && bun run dev",
     "start": "cd apps/backend && bun run start",
+    "start:scheduler": "cd apps/scheduler && bun run start",
+    "start:worker": "cd apps/worker && bun run start",
     "workers": "cd apps/backend && bun run workers",
     "migrate": "cd apps/backend && bun run migrate"
   }

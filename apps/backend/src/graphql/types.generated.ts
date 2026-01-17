@@ -68,10 +68,53 @@ export type BudgetBucket = {
   updated_at: Scalars['String']['output'];
 };
 
+export type CreateBalanceUpdateFromEmailInput = {
+  accountId: Scalars['Int']['input'];
+  balanceType: Scalars['String']['input'];
+  newBalance: Scalars['Float']['input'];
+  processedEmailId: Scalars['Int']['input'];
+  sourceDetail: Scalars['String']['input'];
+  syncSourceId: Scalars['Int']['input'];
+  updateDate: Scalars['String']['input'];
+  updateSource: Scalars['String']['input'];
+  userId: Scalars['ID']['input'];
+};
+
+export type CreateDlqEntryInput = {
+  bodyHtml?: InputMaybe<Scalars['String']['input']>;
+  bodyText: Scalars['String']['input'];
+  date: Scalars['String']['input'];
+  errorMessage: Scalars['String']['input'];
+  errorStack?: InputMaybe<Scalars['String']['input']>;
+  errorType: Scalars['String']['input'];
+  fromAddress: Scalars['String']['input'];
+  messageUid: Scalars['String']['input'];
+  subject: Scalars['String']['input'];
+  syncSourceId: Scalars['Int']['input'];
+  userId: Scalars['ID']['input'];
+};
+
 export type CreateMonthlyPeriodInput = {
   month: Scalars['String']['input'];
   notes?: InputMaybe<Scalars['String']['input']>;
   projected_income: Scalars['Float']['input'];
+};
+
+export type CreateTransactionFromEmailInput = {
+  accountId: Scalars['Int']['input'];
+  amount: Scalars['Float']['input'];
+  merchantName?: InputMaybe<Scalars['String']['input']>;
+  name: Scalars['String']['input'];
+  processedEmailId: Scalars['Int']['input'];
+  syncSourceId: Scalars['Int']['input'];
+  transactionDate: Scalars['String']['input'];
+  userId: Scalars['ID']['input'];
+};
+
+export type MarkEmailProcessedInput = {
+  messageUid: Scalars['String']['input'];
+  syncSourceId: Scalars['Int']['input'];
+  userId: Scalars['ID']['input'];
 };
 
 export type MonthlyPeriod = {
@@ -94,11 +137,15 @@ export type Mutation = {
   add_account: Account;
   add_sync_source: SyncSource;
   close_monthly_period: MonthlyPeriod;
+  createBalanceUpdateFromEmail: Scalars['Boolean']['output'];
+  createDLQEntry: Scalars['Boolean']['output'];
+  createTransactionFromEmail: Transaction;
   create_monthly_period: MonthlyPeriod;
   deactivate_account: Scalars['Boolean']['output'];
   delete_monthly_period: Scalars['Boolean']['output'];
   delete_sync_source: Scalars['Boolean']['output'];
   initialize_default_buckets: Array<BudgetBucket>;
+  markEmailProcessed: ProcessedEmail;
   splitwise_complete_oauth: SplitwiseCredential;
   splitwise_disconnect: Scalars['Boolean']['output'];
   splitwise_update_settings: SplitwiseSetting;
@@ -129,6 +176,21 @@ export type MutationClose_Monthly_PeriodArgs = {
 };
 
 
+export type MutationCreateBalanceUpdateFromEmailArgs = {
+  input: CreateBalanceUpdateFromEmailInput;
+};
+
+
+export type MutationCreateDlqEntryArgs = {
+  input: CreateDlqEntryInput;
+};
+
+
+export type MutationCreateTransactionFromEmailArgs = {
+  input: CreateTransactionFromEmailInput;
+};
+
+
 export type MutationCreate_Monthly_PeriodArgs = {
   input: CreateMonthlyPeriodInput;
   userId: Scalars['ID']['input'];
@@ -155,6 +217,11 @@ export type MutationDelete_Sync_SourceArgs = {
 
 export type MutationInitialize_Default_BucketsArgs = {
   userId: Scalars['ID']['input'];
+};
+
+
+export type MutationMarkEmailProcessedArgs = {
+  input: MarkEmailProcessedInput;
 };
 
 
@@ -213,15 +280,23 @@ export type MutationUpdate_Sync_SourceArgs = {
   userId: Scalars['ID']['input'];
 };
 
+export type ProcessedEmail = {
+  __typename?: 'ProcessedEmail';
+  id: Scalars['Int']['output'];
+  messageUid: Scalars['String']['output'];
+};
+
 export type Query = {
   __typename?: 'Query';
   accounts: Array<Account>;
+  activeSyncSources: Array<SchedulerSyncSource>;
   available_bank_types: Array<AvailableBankType>;
   budget_bucket?: Maybe<BudgetBucket>;
   budget_buckets: Array<BudgetBucket>;
   current_monthly_period?: Maybe<MonthlyPeriod>;
   monthly_period?: Maybe<MonthlyPeriod>;
   monthly_periods: Array<MonthlyPeriod>;
+  processedEmail?: Maybe<ProcessedEmail>;
   splitwise_authorize_url: SplitwiseAuthorizeUrl;
   splitwise_credential?: Maybe<SplitwiseCredential>;
   splitwise_groups: Array<SplitwiseGroup>;
@@ -232,6 +307,7 @@ export type Query = {
   transaction?: Maybe<Transaction>;
   transactions: TransactionListResponse;
   transactions_by_account: TransactionListResponse;
+  workerSyncSource?: Maybe<SchedulerSyncSource>;
 };
 
 
@@ -264,6 +340,12 @@ export type QueryMonthly_PeriodArgs = {
 
 export type QueryMonthly_PeriodsArgs = {
   userId: Scalars['ID']['input'];
+};
+
+
+export type QueryProcessedEmailArgs = {
+  messageUid: Scalars['String']['input'];
+  syncSourceId: Scalars['Int']['input'];
 };
 
 
@@ -322,6 +404,28 @@ export type QueryTransactions_By_AccountArgs = {
   limit?: InputMaybe<Scalars['Int']['input']>;
   offset?: InputMaybe<Scalars['Int']['input']>;
   userId: Scalars['ID']['input'];
+};
+
+
+export type QueryWorkerSyncSourceArgs = {
+  id: Scalars['Int']['input'];
+  userId: Scalars['ID']['input'];
+};
+
+export type SchedulerSyncSource = {
+  __typename?: 'SchedulerSyncSource';
+  accountId: Scalars['Int']['output'];
+  accountType?: Maybe<Scalars['String']['output']>;
+  bank?: Maybe<Scalars['String']['output']>;
+  emailAddress: Scalars['String']['output'];
+  id: Scalars['Int']['output'];
+  imapFolder: Scalars['String']['output'];
+  imapHost: Scalars['String']['output'];
+  imapPasswordEncrypted: Scalars['String']['output'];
+  imapPort: Scalars['Int']['output'];
+  lastProcessedUid?: Maybe<Scalars['String']['output']>;
+  name: Scalars['String']['output'];
+  userId: Scalars['ID']['output'];
 };
 
 export type SplitwiseAuthorizeUrl = {
@@ -527,13 +631,19 @@ export type ResolversTypes = ResolversObject<{
   AvailableBankType: ResolverTypeWrapper<AvailableBankType>;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   BudgetBucket: ResolverTypeWrapper<BudgetBucket>;
+  CreateBalanceUpdateFromEmailInput: CreateBalanceUpdateFromEmailInput;
+  CreateDLQEntryInput: CreateDlqEntryInput;
   CreateMonthlyPeriodInput: CreateMonthlyPeriodInput;
+  CreateTransactionFromEmailInput: CreateTransactionFromEmailInput;
   Float: ResolverTypeWrapper<Scalars['Float']['output']>;
   ID: ResolverTypeWrapper<Scalars['ID']['output']>;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
+  MarkEmailProcessedInput: MarkEmailProcessedInput;
   MonthlyPeriod: ResolverTypeWrapper<MonthlyPeriod>;
   Mutation: ResolverTypeWrapper<Record<PropertyKey, never>>;
+  ProcessedEmail: ResolverTypeWrapper<ProcessedEmail>;
   Query: ResolverTypeWrapper<Record<PropertyKey, never>>;
+  SchedulerSyncSource: ResolverTypeWrapper<SchedulerSyncSource>;
   SplitwiseAuthorizeUrl: ResolverTypeWrapper<SplitwiseAuthorizeUrl>;
   SplitwiseCredential: ResolverTypeWrapper<SplitwiseCredential>;
   SplitwiseGroup: ResolverTypeWrapper<SplitwiseGroup>;
@@ -559,13 +669,19 @@ export type ResolversParentTypes = ResolversObject<{
   AvailableBankType: AvailableBankType;
   Boolean: Scalars['Boolean']['output'];
   BudgetBucket: BudgetBucket;
+  CreateBalanceUpdateFromEmailInput: CreateBalanceUpdateFromEmailInput;
+  CreateDLQEntryInput: CreateDlqEntryInput;
   CreateMonthlyPeriodInput: CreateMonthlyPeriodInput;
+  CreateTransactionFromEmailInput: CreateTransactionFromEmailInput;
   Float: Scalars['Float']['output'];
   ID: Scalars['ID']['output'];
   Int: Scalars['Int']['output'];
+  MarkEmailProcessedInput: MarkEmailProcessedInput;
   MonthlyPeriod: MonthlyPeriod;
   Mutation: Record<PropertyKey, never>;
+  ProcessedEmail: ProcessedEmail;
   Query: Record<PropertyKey, never>;
+  SchedulerSyncSource: SchedulerSyncSource;
   SplitwiseAuthorizeUrl: SplitwiseAuthorizeUrl;
   SplitwiseCredential: SplitwiseCredential;
   SplitwiseGroup: SplitwiseGroup;
@@ -631,11 +747,15 @@ export type MutationResolvers<ContextType = Context, ParentType extends Resolver
   add_account?: Resolver<ResolversTypes['Account'], ParentType, ContextType, RequireFields<MutationAdd_AccountArgs, 'input' | 'userId'>>;
   add_sync_source?: Resolver<ResolversTypes['SyncSource'], ParentType, ContextType, RequireFields<MutationAdd_Sync_SourceArgs, 'input' | 'userId'>>;
   close_monthly_period?: Resolver<ResolversTypes['MonthlyPeriod'], ParentType, ContextType, RequireFields<MutationClose_Monthly_PeriodArgs, 'id' | 'userId'>>;
+  createBalanceUpdateFromEmail?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationCreateBalanceUpdateFromEmailArgs, 'input'>>;
+  createDLQEntry?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationCreateDlqEntryArgs, 'input'>>;
+  createTransactionFromEmail?: Resolver<ResolversTypes['Transaction'], ParentType, ContextType, RequireFields<MutationCreateTransactionFromEmailArgs, 'input'>>;
   create_monthly_period?: Resolver<ResolversTypes['MonthlyPeriod'], ParentType, ContextType, RequireFields<MutationCreate_Monthly_PeriodArgs, 'input' | 'userId'>>;
   deactivate_account?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationDeactivate_AccountArgs, 'account_id' | 'userId'>>;
   delete_monthly_period?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationDelete_Monthly_PeriodArgs, 'id' | 'userId'>>;
   delete_sync_source?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationDelete_Sync_SourceArgs, 'id' | 'userId'>>;
   initialize_default_buckets?: Resolver<Array<ResolversTypes['BudgetBucket']>, ParentType, ContextType, RequireFields<MutationInitialize_Default_BucketsArgs, 'userId'>>;
+  markEmailProcessed?: Resolver<ResolversTypes['ProcessedEmail'], ParentType, ContextType, RequireFields<MutationMarkEmailProcessedArgs, 'input'>>;
   splitwise_complete_oauth?: Resolver<ResolversTypes['SplitwiseCredential'], ParentType, ContextType, RequireFields<MutationSplitwise_Complete_OauthArgs, 'code' | 'state' | 'userId'>>;
   splitwise_disconnect?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationSplitwise_DisconnectArgs, 'userId'>>;
   splitwise_update_settings?: Resolver<ResolversTypes['SplitwiseSetting'], ParentType, ContextType, RequireFields<MutationSplitwise_Update_SettingsArgs, 'input' | 'userId'>>;
@@ -647,14 +767,21 @@ export type MutationResolvers<ContextType = Context, ParentType extends Resolver
   update_sync_source?: Resolver<ResolversTypes['SyncSource'], ParentType, ContextType, RequireFields<MutationUpdate_Sync_SourceArgs, 'id' | 'input' | 'userId'>>;
 }>;
 
+export type ProcessedEmailResolvers<ContextType = Context, ParentType extends ResolversParentTypes['ProcessedEmail'] = ResolversParentTypes['ProcessedEmail']> = ResolversObject<{
+  id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  messageUid?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+}>;
+
 export type QueryResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = ResolversObject<{
   accounts?: Resolver<Array<ResolversTypes['Account']>, ParentType, ContextType, RequireFields<QueryAccountsArgs, 'userId'>>;
+  activeSyncSources?: Resolver<Array<ResolversTypes['SchedulerSyncSource']>, ParentType, ContextType>;
   available_bank_types?: Resolver<Array<ResolversTypes['AvailableBankType']>, ParentType, ContextType>;
   budget_bucket?: Resolver<Maybe<ResolversTypes['BudgetBucket']>, ParentType, ContextType, RequireFields<QueryBudget_BucketArgs, 'bucket_id' | 'userId'>>;
   budget_buckets?: Resolver<Array<ResolversTypes['BudgetBucket']>, ParentType, ContextType, RequireFields<QueryBudget_BucketsArgs, 'userId'>>;
   current_monthly_period?: Resolver<Maybe<ResolversTypes['MonthlyPeriod']>, ParentType, ContextType, RequireFields<QueryCurrent_Monthly_PeriodArgs, 'userId'>>;
   monthly_period?: Resolver<Maybe<ResolversTypes['MonthlyPeriod']>, ParentType, ContextType, RequireFields<QueryMonthly_PeriodArgs, 'month' | 'userId'>>;
   monthly_periods?: Resolver<Array<ResolversTypes['MonthlyPeriod']>, ParentType, ContextType, RequireFields<QueryMonthly_PeriodsArgs, 'userId'>>;
+  processedEmail?: Resolver<Maybe<ResolversTypes['ProcessedEmail']>, ParentType, ContextType, RequireFields<QueryProcessedEmailArgs, 'messageUid' | 'syncSourceId'>>;
   splitwise_authorize_url?: Resolver<ResolversTypes['SplitwiseAuthorizeUrl'], ParentType, ContextType, RequireFields<QuerySplitwise_Authorize_UrlArgs, 'userId'>>;
   splitwise_credential?: Resolver<Maybe<ResolversTypes['SplitwiseCredential']>, ParentType, ContextType, RequireFields<QuerySplitwise_CredentialArgs, 'userId'>>;
   splitwise_groups?: Resolver<Array<ResolversTypes['SplitwiseGroup']>, ParentType, ContextType, RequireFields<QuerySplitwise_GroupsArgs, 'userId'>>;
@@ -665,6 +792,22 @@ export type QueryResolvers<ContextType = Context, ParentType extends ResolversPa
   transaction?: Resolver<Maybe<ResolversTypes['Transaction']>, ParentType, ContextType, RequireFields<QueryTransactionArgs, 'id' | 'userId'>>;
   transactions?: Resolver<ResolversTypes['TransactionListResponse'], ParentType, ContextType, RequireFields<QueryTransactionsArgs, 'userId'>>;
   transactions_by_account?: Resolver<ResolversTypes['TransactionListResponse'], ParentType, ContextType, RequireFields<QueryTransactions_By_AccountArgs, 'account_id' | 'userId'>>;
+  workerSyncSource?: Resolver<Maybe<ResolversTypes['SchedulerSyncSource']>, ParentType, ContextType, RequireFields<QueryWorkerSyncSourceArgs, 'id' | 'userId'>>;
+}>;
+
+export type SchedulerSyncSourceResolvers<ContextType = Context, ParentType extends ResolversParentTypes['SchedulerSyncSource'] = ResolversParentTypes['SchedulerSyncSource']> = ResolversObject<{
+  accountId?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  accountType?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  bank?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  emailAddress?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  imapFolder?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  imapHost?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  imapPasswordEncrypted?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  imapPort?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  lastProcessedUid?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  userId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
 }>;
 
 export type SplitwiseAuthorizeUrlResolvers<ContextType = Context, ParentType extends ResolversParentTypes['SplitwiseAuthorizeUrl'] = ResolversParentTypes['SplitwiseAuthorizeUrl']> = ResolversObject<{
@@ -759,7 +902,9 @@ export type Resolvers<ContextType = Context> = ResolversObject<{
   BudgetBucket?: BudgetBucketResolvers<ContextType>;
   MonthlyPeriod?: MonthlyPeriodResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
+  ProcessedEmail?: ProcessedEmailResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
+  SchedulerSyncSource?: SchedulerSyncSourceResolvers<ContextType>;
   SplitwiseAuthorizeUrl?: SplitwiseAuthorizeUrlResolvers<ContextType>;
   SplitwiseCredential?: SplitwiseCredentialResolvers<ContextType>;
   SplitwiseGroup?: SplitwiseGroupResolvers<ContextType>;
