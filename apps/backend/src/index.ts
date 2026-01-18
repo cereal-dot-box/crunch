@@ -11,7 +11,6 @@ import { loadEnv, getEnv } from './config/env';
 import { connectDatabase, disconnectDatabase } from './lib/database';
 import { errorHandler } from './middleware/error.middleware';
 import { resolvers } from './graphql/resolvers/index.js';
-import { getEmailScheduler } from './services/email/scheduler.service';
 import { verifyServiceToken, extractToken } from './lib/jwks';
 import { loggers } from './lib/logger';
 import { registerMCPRoutes } from './mcp/index.js';
@@ -139,16 +138,9 @@ async function start() {
 
   log.info({ port, env: env.NODE_ENV, authService: process.env.AUTH_SERVICE_URL || 'http://localhost:4000' }, 'Crunch backend started');
 
-  // Start email sync scheduler in background (non-blocking)
-  const emailScheduler = getEmailScheduler();
-  emailScheduler.start().catch((error) => {
-    log.error({ err: error }, 'Email scheduler failed to start');
-  });
-
   // Shutdown handler
   const shutdown = async () => {
     log.info('Shutting down...');
-    await emailScheduler.stop();
     await disconnectDatabase();
     process.exit(0);
   };

@@ -15,6 +15,9 @@ const envSchema = z.object({
   // Shared secret for JWT signing (must match backend's BETTER_AUTH_SECRET)
   BETTER_AUTH_SECRET: z.string().min(1, 'BETTER_AUTH_SECRET is required'),
 
+  // Redis for job queue
+  REDIS_URL: z.string().default('redis://localhost:6379'),
+
   // Node
   NODE_ENV: z.enum(['development', 'production']).default('development'),
   LOG_LEVEL: z.string().default('info'),

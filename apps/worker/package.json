@@ -9,14 +9,20 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@bull-board/api": "^6.16.2",
+    "@bull-board/express": "^6.16.2",
     "@crunch/parsers": "workspace:*",
+    "bullmq": "^5.66.4",
     "dotenv": "^16.4.7",
+    "express": "^5.2.1",
+    "ioredis": "^5.8.2",
     "jose": "^5.9.6",
     "pino": "^9.7.0",
     "pino-pretty": "^13.0.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@types/express": "^5.0.6",
     "@types/node": "^22.10.5",
     "bun-types": "^1.3.6",
     "typescript": "^5.7.3"

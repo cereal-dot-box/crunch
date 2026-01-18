@@ -45,4 +45,6 @@ export const loggers = {
   get worker() { return createModuleLogger('Worker'); },
   get graphql() { return createModuleLogger('GraphQL'); },
   get parser() { return createModuleLogger('Parser'); },
+  get redis() { return createModuleLogger('Redis'); },
+  get queue() { return createModuleLogger('Queue'); },
 };

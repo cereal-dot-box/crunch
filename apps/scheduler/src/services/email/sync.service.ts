@@ -1,20 +1,21 @@
 import { ImapService } from './imap.service';
 import { loggers } from '../../lib/logger';
 import type { SyncSourceConfig } from '../../config/rest-client';
+import { getEmailProcessQueue } from '../../queues/definitions';
 
 const log = loggers.email;
 
 export interface SyncResult {
   syncSourceName: string;
   emailsFetched: number;
-  jobsEnqueued: number;  // Always 0 for scheduler-only mode
+  jobsEnqueued: number;
   errors: number;
   duration: number;
 }
 
 export class EmailSyncService {
   /**
-   * Sync emails from a SyncSource's IMAP and log them (no processing)
+   * Sync emails from a SyncSource's IMAP and enqueue for processing
    */
   async syncAndProcessSyncSource(
     syncSourceConfig: SyncSourceConfig
@@ -26,7 +27,7 @@ export class EmailSyncService {
     const result: SyncResult = {
       syncSourceName: syncSourceConfig.name,
       emailsFetched: 0,
-      jobsEnqueued: 0,  // No jobs enqueued in scheduler-only mode
+      jobsEnqueued: 0,
       errors: 0,
       duration: 0,
     };
@@ -47,20 +48,32 @@ export class EmailSyncService {
         return result;
       }
 
-      // Log each email instead of enqueuing for processing
+      // Enqueue each email for processing
+      const queue = getEmailProcessQueue();
+
       for (const email of emails) {
         try {
-          log.info({
-            syncSourceId: syncSourceConfig.id,
-            uid: email.uid,
-            subject: email.subject,
-            from: email.from,
-            date: email.date,
-            textBodyLength: email.textBody.length,
-            hasHtmlBody: !!email.htmlBody,
-          }, 'Fetched email from IMAP (not processing)');
+          await queue.add(
+            `email-${email.uid}`,
+            {
+              syncSourceId: syncSourceConfig.id,
+              userId: syncSourceConfig.userId,
+              message: {
+                uid: email.uid.toString(),
+                subject: email.subject,
+                from: email.from,
+                date: email.date.toISOString(),
+                bodyText: email.textBody,
+                bodyHtml: email.htmlBody,
+              },
+            },
+            {
+              jobId: `${syncSourceConfig.id}-${email.uid}`,
+            }
+          );
+          result.jobsEnqueued++;
         } catch (error) {
-          log.error({ err: error, uid: email.uid }, 'Error logging email');
+          log.error({ err: error, uid: email.uid }, 'Failed to enqueue email');
           result.errors++;
         }
       }
@@ -70,9 +83,10 @@ export class EmailSyncService {
 
       log.info({
         emailsFetched: result.emailsFetched,
+        jobsEnqueued: result.jobsEnqueued,
         errors: result.errors,
         durationMs: result.duration,
-      }, 'Sync complete (emails logged, not processed)');
+      }, 'Sync complete (jobs enqueued)');
 
       return result;
     } catch (error) {

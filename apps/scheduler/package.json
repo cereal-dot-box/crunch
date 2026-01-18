@@ -9,6 +9,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "bullmq": "^5.66.4",
+    "ioredis": "^5.8.2",
     "imap": "^0.8.19",
     "mailparser": "^3.9.1",
     "node-cron": "^4.2.1",

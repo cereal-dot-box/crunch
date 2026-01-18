@@ -17,7 +17,7 @@ export async function generateServiceToken(payload: ServiceTokenPayload): Promis
 
   const token = await new SignJWT(payload as any)
     .setProtectedHeader({ alg: 'HS256' })
-    .setIssuer('crunch-scheduler')
+    .setIssuer('auth-service')
     .setIssuedAt()
     .setExpirationTime('24h') // Tokens valid for 24 hours
     .sign(encoder.encode(secret));

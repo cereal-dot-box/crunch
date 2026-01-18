@@ -20,7 +20,6 @@ import { SplitwiseCredential } from '../../models/splitwise-credential';
 import { SplitwiseSetting } from '../../models/splitwise-setting';
 import { oauthStateStore } from '../../lib/oauth-state';
 import { SplitwiseService } from '../../services/splitwise.service';
-import { EmailSyncService } from '../../services/email/sync.service';
 import { ImapService } from '../../services/email/imap.service';
 import { getEmailParserService } from '../../services/email/parser.service';
 import { loggers } from '../../lib/logger';
@@ -461,27 +460,6 @@ export const userResolvers = {
       };
     },
 
-    sync_accounts: async (_parent: any, { userId }: { userId: string }, context: Context) => {
-      if (!context.isAuthenticated) throw new Error('Unauthorized');
-
-      const syncService = new EmailSyncService();
-
-      // Get all active sync sources for this user
-      const syncSources = await SyncSource.getActiveByUserId(userId);
-
-      // Sync each sync source
-      for (const source of syncSources) {
-        try {
-          await syncService.syncSyncSource(source.id, userId);
-        } catch (error) {
-          log.error({ err: error, syncSourceId: source.id }, 'Failed to sync sync source');
-          // Continue with other sources even if one fails
-        }
-      }
-
-      return true;
-    },
-
     deactivate_account: async (
       _parent: any,
       { userId, account_id }: { userId: string; account_id: number },
@@ -703,25 +681,6 @@ export const userResolvers = {
         error_message: success
           ? null
           : 'Connection failed. Please check credentials.',
-      };
-    },
-
-    sync_sync_source: async (
-      _parent: any,
-      { userId, id }: { userId: string; id: number },
-      context: Context
-    ) => {
-      if (!context.isAuthenticated) throw new Error('Unauthorized');
-
-      const syncService = new EmailSyncService();
-      const result = await syncService.syncAndProcessSyncSource(id, userId);
-
-      return {
-        timestamp: new Date().toISOString(),
-        emails_fetched: result.emailsFetched,
-        jobs_enqueued: result.jobsEnqueued,
-        errors: result.errors,
-        duration: result.duration,
       };
     },
 

@@ -47,4 +47,6 @@ export const loggers = {
   get imap() { return createModuleLogger('IMAP'); },
   get http() { return createModuleLogger('HTTP'); },
   get config() { return createModuleLogger('Config'); },
+  get redis() { return createModuleLogger('Redis'); },
+  get queue() { return createModuleLogger('Queue'); },
 };

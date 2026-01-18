@@ -1,30 +1,34 @@
-import { loadEnv } from './config/env';
-import { processEmailJob, addDLQEntry, type EmailProcessJobData } from './workers/email-process.worker';
+import { loadEnv, getEnv } from './config/env';
+import { startQueueWorker, stopQueueWorker } from './workers/queue.worker';
+import { startBullBoard, stopBullBoard } from './server/bull-board.server';
 import { loggers } from './lib/logger';
 
 const log = loggers.worker;
 
 async function start() {
   loadEnv();
+  const env = getEnv();
+
   log.info('Starting email worker...');
 
-  // TODO: Job processing setup (BullMQ or other mechanism)
-  // For now: simple test function
-  log.info('Email worker started');
-  log.info('Worker is ready to process emails via REST API');
+  // Start the queue worker
+  await startQueueWorker(env.WORKER_CONCURRENCY);
+
+  // Start Bull Board UI
+  await startBullBoard(3002);
+
+  log.info('Worker is ready to process jobs from queue');
 
   const shutdown = async () => {
     log.info('Shutting down...');
+    await stopQueueWorker();
+    await stopBullBoard();
     process.exit(0);
   };
 
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
 }
-
-// Export for testing
-export { processEmailJob, addDLQEntry };
-export type { EmailProcessJobData };
 
 start().catch((error) => {
   log.fatal({ err: error }, 'Failed to start worker');

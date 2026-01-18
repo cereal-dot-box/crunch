@@ -1,6 +1,7 @@
 import { loadEnv } from './config/env';
 import { getEmailScheduler } from './services/email/scheduler.service';
 import { loggers } from './lib/logger';
+import { closeAllQueues } from './queues/definitions';
 
 const log = loggers.scheduler;
 
@@ -17,6 +18,7 @@ async function start() {
   const shutdown = async () => {
     log.info('Shutting down...');
     await emailScheduler.stop();
+    await closeAllQueues();
     process.exit(0);
   };
 
