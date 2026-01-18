@@ -1,7 +1,7 @@
 import { ImapClient, EmailMessage } from '../../lib/imap-client';
 import { decryptImapPassword } from '../../lib/encryption';
 import { loggers } from '../../lib/logger';
-import type { SyncSourceConfig } from '../../config/backend-client';
+import type { SyncSourceConfig } from '../../config/rest-client';
 
 const log = loggers.imap;
 

@@ -1,7 +1,7 @@
 import cron, { ScheduledTask } from 'node-cron';
 import { EmailSyncService } from './sync.service';
 import { loggers } from '../../lib/logger';
-import type { SyncSourceConfig } from '../../config/backend-client';
+import type { SyncSourceConfig } from '../../config/rest-client';
 
 const log = loggers.scheduler;
 
@@ -95,10 +95,10 @@ export class EmailSchedulerService {
 
   private async getAllActiveSyncSources(): Promise<SyncSourceConfig[]> {
     try {
-      const { getActiveSyncSources } = await import('../../config/backend-client');
+      const { getActiveSyncSources } = await import('../../config/rest-client');
       return await getActiveSyncSources();
     } catch (error) {
-      log.error({ err: error }, 'Error getting active sync sources from GraphQL API');
+      log.error({ err: error }, 'Error getting active sync sources from REST API');
       return [];
     }
   }
@@ -109,8 +109,8 @@ export class EmailSchedulerService {
   async triggerSync(syncSourceId: number, userId: string): Promise<void> {
     log.info({ syncSourceId }, 'Manually triggering sync');
 
-    // Fetch the specific sync source via GraphQL
-    const { getSyncSource } = await import('../../config/backend-client');
+    // Fetch the specific sync source via REST API
+    const { getSyncSource } = await import('../../config/rest-client');
     const source = await getSyncSource(syncSourceId, userId);
 
     if (!source) {

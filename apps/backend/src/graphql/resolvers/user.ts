@@ -7,30 +7,23 @@ import type {
   CreateMonthlyPeriodInput,
   UpdateMonthlyPeriodInput,
   UpdateSplitwiseSettingsInput,
-  Resolvers,
   QueryTransactions_By_AccountArgs,
   QueryTransactionsArgs,
-  MarkEmailProcessedInput,
-  CreateTransactionFromEmailInput,
-  CreateBalanceUpdateFromEmailInput,
-  CreateDlqEntryInput,
-} from './types.generated.js';
-import { BudgetBucket } from '../models/budget-bucket';
-import { Account } from '../models/account';
-import { BalanceUpdate } from '../models/balance-update';
-import { Transaction } from '../models/transaction';
-import { SyncSource } from '../models/sync-source';
-import { MonthlyPeriod } from '../models/monthly-period';
-import { SplitwiseCredential } from '../models/splitwise-credential';
-import { SplitwiseSetting } from '../models/splitwise-setting';
-import { ProcessedEmail } from '../models/processed-emails';
-import { EmailAlertDLQ } from '../models/email-alert-dlq';
-import { oauthStateStore } from '../lib/oauth-state';
-import { SplitwiseService } from '../services/splitwise.service';
-import { EmailSyncService } from '../services/email/sync.service';
-import { ImapService } from '../services/email/imap.service';
-import { getEmailParserService } from '../services/email/parser.service';
-import { loggers } from '../lib/logger';
+} from '../types.generated.js';
+import { BudgetBucket } from '../../models/budget-bucket';
+import { Account } from '../../models/account';
+import { BalanceUpdate } from '../../models/balance-update';
+import { Transaction } from '../../models/transaction';
+import { SyncSource } from '../../models/sync-source';
+import { MonthlyPeriod } from '../../models/monthly-period';
+import { SplitwiseCredential } from '../../models/splitwise-credential';
+import { SplitwiseSetting } from '../../models/splitwise-setting';
+import { oauthStateStore } from '../../lib/oauth-state';
+import { SplitwiseService } from '../../services/splitwise.service';
+import { EmailSyncService } from '../../services/email/sync.service';
+import { ImapService } from '../../services/email/imap.service';
+import { getEmailParserService } from '../../services/email/parser.service';
+import { loggers } from '../../lib/logger';
 
 const log = loggers.graphql;
 
@@ -39,7 +32,7 @@ export interface Context extends MercuriusContext {
   serviceClient?: string;
 }
 
-export const resolvers: Resolvers = {
+export const userResolvers = {
   Query: {
     accounts: async (_parent: any, { userId }: { userId: string }, context: Context) => {
       if (!context.isAuthenticated) throw new Error('Unauthorized');
@@ -302,79 +295,6 @@ export const resolvers: Resolvers = {
       const setting = await SplitwiseSetting.getOrCreateDefault(userId);
 
       return setting.toJSON();
-    },
-
-    // Scheduler query: Get all active sync sources (for internal scheduler use)
-    activeSyncSources: async () => {
-      const { db } = await import('../lib/database');
-
-      const sources = await db
-        .selectFrom('SyncSource')
-        .innerJoin('Account', 'Account.id', 'SyncSource.account_id')
-        .select([
-          'SyncSource.id',
-          'SyncSource.name',
-          'SyncSource.bank',
-          'SyncSource.account_type as accountType',
-          'SyncSource.account_id as accountId',
-          'SyncSource.email_address as emailAddress',
-          'SyncSource.imap_host as imapHost',
-          'SyncSource.imap_port as imapPort',
-          'SyncSource.imap_password_encrypted as imapPasswordEncrypted',
-          'SyncSource.imap_folder as imapFolder',
-          'SyncSource.last_processed_uid as lastProcessedUid',
-          'Account.user_id as userId',
-        ])
-        .where('SyncSource.status', '=', 'active')
-        .where('SyncSource.is_active', '=', 1)
-        .where('Account.is_active', '=', 1)
-        .execute();
-
-      return sources;
-    },
-
-    // Worker queries (requires internal authentication)
-    processedEmail: async (
-      _parent: any,
-      { syncSourceId, messageUid }: { syncSourceId: number; messageUid: string },
-      context: Context
-    ) => {
-      if (!context.isAuthenticated) throw new Error('Unauthorized');
-
-      const isProcessed = await ProcessedEmail.isProcessed(syncSourceId, messageUid);
-      if (!isProcessed) return null;
-
-      // Return minimal data - the worker only needs to know if it exists
-      return {
-        id: 0,
-        messageUid,
-      };
-    },
-
-    workerSyncSource: async (
-      _parent: any,
-      { id, userId }: { id: number; userId: string },
-      context: Context
-    ) => {
-      if (!context.isAuthenticated) throw new Error('Unauthorized');
-
-      const source = await SyncSource.getById(id, userId);
-      if (!source) throw new Error('Sync source not found');
-
-      return {
-        id: source.id,
-        name: source.name,
-        bank: source.bank,
-        accountType: source.accountType,
-        accountId: source.accountId,
-        emailAddress: source.emailAddress,
-        imapHost: source.imapHost,
-        imapPort: source.imapPort,
-        imapPasswordEncrypted: source.imapPasswordEncrypted,
-        imapFolder: source.imapFolder,
-        lastProcessedUid: source.lastProcessedUid,
-        userId,
-      };
     },
   },
 
@@ -900,107 +820,6 @@ export const resolvers: Resolvers = {
       });
 
       return setting.toJSON();
-    },
-
-    // Worker mutations (requires internal authentication)
-    markEmailProcessed: async (
-      _parent: any,
-      { input }: { input: MarkEmailProcessedInput },
-      context: Context
-    ) => {
-      if (!context.isAuthenticated) throw new Error('Unauthorized');
-
-      const processedEmail = await ProcessedEmail.mark({
-        userId: input.userId,
-        syncSourceId: input.syncSourceId,
-        messageUid: input.messageUid,
-      });
-
-      return {
-        id: processedEmail.id,
-        messageUid: processedEmail.messageUid,
-      };
-    },
-
-    createTransactionFromEmail: async (
-      _parent: any,
-      { input }: { input: CreateTransactionFromEmailInput },
-      context: Context
-    ) => {
-      if (!context.isAuthenticated) throw new Error('Unauthorized');
-
-      const transaction = await Transaction.create({
-        userId: input.userId,
-        accountId: input.accountId,
-        syncSourceId: input.syncSourceId,
-        processedEmailId: input.processedEmailId,
-        amount: input.amount,
-        transactionDate: input.transactionDate,
-        name: input.name,
-        merchantName: input.merchantName ?? undefined,
-      });
-
-      return {
-        id: transaction.id,
-        transaction_id: String(transaction.id),
-        account_id: transaction.account_id,
-        amount: transaction.amount,
-        iso_currency_code: transaction.iso_currency_code,
-        date: transaction.transaction_date,
-        authorized_date: transaction.authorized_date,
-        name: transaction.name,
-        merchant_name: transaction.merchant_name,
-        pending: transaction.pending === 1,
-        payment_channel: transaction.payment_channel,
-        created_at: transaction.created_at,
-        updated_at: transaction.updated_at,
-      };
-    },
-
-    createBalanceUpdateFromEmail: async (
-      _parent: any,
-      { input }: { input: CreateBalanceUpdateFromEmailInput },
-      context: Context
-    ) => {
-      if (!context.isAuthenticated) throw new Error('Unauthorized');
-
-      await BalanceUpdate.create({
-        userId: input.userId,
-        accountId: input.accountId,
-        syncSourceId: input.syncSourceId,
-        processedEmailId: input.processedEmailId,
-        balanceType: input.balanceType as 'available_balance' | 'current_balance',
-        newBalance: input.newBalance,
-        updateSource: input.updateSource,
-        sourceDetail: input.sourceDetail,
-        updateDate: input.updateDate,
-      });
-
-      return true;
-    },
-
-    createDLQEntry: async (
-      _parent: any,
-      { input }: { input: CreateDlqEntryInput },
-      context: Context
-    ) => {
-      if (!context.isAuthenticated) throw new Error('Unauthorized');
-
-      await EmailAlertDLQ.create({
-        userId: input.userId,
-        syncSourceId: input.syncSourceId,
-        messageUid: input.messageUid,
-        subject: input.subject,
-        fromAddress: input.fromAddress,
-        date: input.date,
-        bodyText: input.bodyText,
-        bodyHtml: input.bodyHtml ?? undefined,
-        errorMessage: input.errorMessage,
-        errorType: input.errorType as any,
-        errorStack: input.errorStack ?? undefined,
-      });
-
-      return true;
     },
   },
 };

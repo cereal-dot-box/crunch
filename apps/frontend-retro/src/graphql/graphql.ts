@@ -67,10 +67,53 @@ export type BudgetBucket = {
   updated_at: Scalars['String']['output'];
 };
 
+export type CreateBalanceUpdateFromEmailInput = {
+  accountId: Scalars['Int']['input'];
+  balanceType: Scalars['String']['input'];
+  newBalance: Scalars['Float']['input'];
+  processedEmailId: Scalars['Int']['input'];
+  sourceDetail: Scalars['String']['input'];
+  syncSourceId: Scalars['Int']['input'];
+  updateDate: Scalars['String']['input'];
+  updateSource: Scalars['String']['input'];
+  userId: Scalars['ID']['input'];
+};
+
+export type CreateDlqEntryInput = {
+  bodyHtml?: InputMaybe<Scalars['String']['input']>;
+  bodyText: Scalars['String']['input'];
+  date: Scalars['String']['input'];
+  errorMessage: Scalars['String']['input'];
+  errorStack?: InputMaybe<Scalars['String']['input']>;
+  errorType: Scalars['String']['input'];
+  fromAddress: Scalars['String']['input'];
+  messageUid: Scalars['String']['input'];
+  subject: Scalars['String']['input'];
+  syncSourceId: Scalars['Int']['input'];
+  userId: Scalars['ID']['input'];
+};
+
 export type CreateMonthlyPeriodInput = {
   month: Scalars['String']['input'];
   notes?: InputMaybe<Scalars['String']['input']>;
   projected_income: Scalars['Float']['input'];
+};
+
+export type CreateTransactionFromEmailInput = {
+  accountId: Scalars['Int']['input'];
+  amount: Scalars['Float']['input'];
+  merchantName?: InputMaybe<Scalars['String']['input']>;
+  name: Scalars['String']['input'];
+  processedEmailId: Scalars['Int']['input'];
+  syncSourceId: Scalars['Int']['input'];
+  transactionDate: Scalars['String']['input'];
+  userId: Scalars['ID']['input'];
+};
+
+export type MarkEmailProcessedInput = {
+  messageUid: Scalars['String']['input'];
+  syncSourceId: Scalars['Int']['input'];
+  userId: Scalars['ID']['input'];
 };
 
 export type MonthlyPeriod = {
@@ -93,11 +136,15 @@ export type Mutation = {
   add_account: Account;
   add_sync_source: SyncSource;
   close_monthly_period: MonthlyPeriod;
+  createBalanceUpdateFromEmail: Scalars['Boolean']['output'];
+  createDLQEntry: Scalars['Boolean']['output'];
+  createTransactionFromEmail: Transaction;
   create_monthly_period: MonthlyPeriod;
   deactivate_account: Scalars['Boolean']['output'];
   delete_monthly_period: Scalars['Boolean']['output'];
   delete_sync_source: Scalars['Boolean']['output'];
   initialize_default_buckets: Array<BudgetBucket>;
+  markEmailProcessed: ProcessedEmail;
   splitwise_complete_oauth: SplitwiseCredential;
   splitwise_disconnect: Scalars['Boolean']['output'];
   splitwise_update_settings: SplitwiseSetting;
@@ -128,6 +175,21 @@ export type MutationClose_Monthly_PeriodArgs = {
 };
 
 
+export type MutationCreateBalanceUpdateFromEmailArgs = {
+  input: CreateBalanceUpdateFromEmailInput;
+};
+
+
+export type MutationCreateDlqEntryArgs = {
+  input: CreateDlqEntryInput;
+};
+
+
+export type MutationCreateTransactionFromEmailArgs = {
+  input: CreateTransactionFromEmailInput;
+};
+
+
 export type MutationCreate_Monthly_PeriodArgs = {
   input: CreateMonthlyPeriodInput;
   userId: Scalars['ID']['input'];
@@ -154,6 +216,11 @@ export type MutationDelete_Sync_SourceArgs = {
 
 export type MutationInitialize_Default_BucketsArgs = {
   userId: Scalars['ID']['input'];
+};
+
+
+export type MutationMarkEmailProcessedArgs = {
+  input: MarkEmailProcessedInput;
 };
 
 
@@ -212,15 +279,23 @@ export type MutationUpdate_Sync_SourceArgs = {
   userId: Scalars['ID']['input'];
 };
 
+export type ProcessedEmail = {
+  __typename?: 'ProcessedEmail';
+  id: Scalars['Int']['output'];
+  messageUid: Scalars['String']['output'];
+};
+
 export type Query = {
   __typename?: 'Query';
   accounts: Array<Account>;
+  activeSyncSources: Array<SchedulerSyncSource>;
   available_bank_types: Array<AvailableBankType>;
   budget_bucket?: Maybe<BudgetBucket>;
   budget_buckets: Array<BudgetBucket>;
   current_monthly_period?: Maybe<MonthlyPeriod>;
   monthly_period?: Maybe<MonthlyPeriod>;
   monthly_periods: Array<MonthlyPeriod>;
+  processedEmail?: Maybe<ProcessedEmail>;
   splitwise_authorize_url: SplitwiseAuthorizeUrl;
   splitwise_credential?: Maybe<SplitwiseCredential>;
   splitwise_groups: Array<SplitwiseGroup>;
@@ -231,6 +306,7 @@ export type Query = {
   transaction?: Maybe<Transaction>;
   transactions: TransactionListResponse;
   transactions_by_account: TransactionListResponse;
+  workerSyncSource?: Maybe<SchedulerSyncSource>;
 };
 
 
@@ -263,6 +339,12 @@ export type QueryMonthly_PeriodArgs = {
 
 export type QueryMonthly_PeriodsArgs = {
   userId: Scalars['ID']['input'];
+};
+
+
+export type QueryProcessedEmailArgs = {
+  messageUid: Scalars['String']['input'];
+  syncSourceId: Scalars['Int']['input'];
 };
 
 
@@ -321,6 +403,28 @@ export type QueryTransactions_By_AccountArgs = {
   limit?: InputMaybe<Scalars['Int']['input']>;
   offset?: InputMaybe<Scalars['Int']['input']>;
   userId: Scalars['ID']['input'];
+};
+
+
+export type QueryWorkerSyncSourceArgs = {
+  id: Scalars['Int']['input'];
+  userId: Scalars['ID']['input'];
+};
+
+export type SchedulerSyncSource = {
+  __typename?: 'SchedulerSyncSource';
+  accountId: Scalars['Int']['output'];
+  accountType?: Maybe<Scalars['String']['output']>;
+  bank?: Maybe<Scalars['String']['output']>;
+  emailAddress: Scalars['String']['output'];
+  id: Scalars['Int']['output'];
+  imapFolder: Scalars['String']['output'];
+  imapHost: Scalars['String']['output'];
+  imapPasswordEncrypted: Scalars['String']['output'];
+  imapPort: Scalars['Int']['output'];
+  lastProcessedUid?: Maybe<Scalars['String']['output']>;
+  name: Scalars['String']['output'];
+  userId: Scalars['ID']['output'];
 };
 
 export type SplitwiseAuthorizeUrl = {

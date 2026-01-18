@@ -2,8 +2,8 @@ import { z } from 'zod';
 import dotenv from 'dotenv';
 
 const envSchema = z.object({
-  // Backend GraphQL API
-  BACKEND_GRAPHQL_URL: z.string().url().default('http://localhost:3000/graphql'),
+  // Backend REST API
+  BACKEND_URL: z.string().url().default('http://localhost:3000'),
 
   // Shared secret for JWT signing (must match backend's BETTER_AUTH_SECRET)
   BETTER_AUTH_SECRET: z.string().min(1, 'BETTER_AUTH_SECRET is required'),

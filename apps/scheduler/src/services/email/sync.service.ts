@@ -1,6 +1,6 @@
 import { ImapService } from './imap.service';
 import { loggers } from '../../lib/logger';
-import type { SyncSourceConfig } from '../../config/backend-client';
+import type { SyncSourceConfig } from '../../config/rest-client';
 
 const log = loggers.email;
 
@@ -93,4 +93,4 @@ export class EmailSyncService {
 }
 
 // Re-export SyncSourceConfig for convenience
-export type { SyncSourceConfig } from '../../config/backend-client';
+export type { SyncSourceConfig } from '../../config/rest-client';

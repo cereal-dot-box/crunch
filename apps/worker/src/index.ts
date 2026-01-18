@@ -11,7 +11,7 @@ async function start() {
   // TODO: Job processing setup (BullMQ or other mechanism)
   // For now: simple test function
   log.info('Email worker started');
-  log.info('Worker is ready to process emails via GraphQL API');
+  log.info('Worker is ready to process emails via REST API');
 
   const shutdown = async () => {
     log.info('Shutting down...');

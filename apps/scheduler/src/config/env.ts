@@ -12,6 +12,9 @@ const envSchema = z.object({
   // Encryption (for IMAP password decryption)
   ENCRYPTION_KEY: z.string().length(64).default('0'.repeat(64)),
 
+  // Shared secret for JWT signing (must match backend's BETTER_AUTH_SECRET)
+  BETTER_AUTH_SECRET: z.string().min(1, 'BETTER_AUTH_SECRET is required'),
+
   // Node
   NODE_ENV: z.enum(['development', 'production']).default('development'),
   LOG_LEVEL: z.string().default('info'),

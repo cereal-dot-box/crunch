@@ -5,7 +5,7 @@ import path from 'node:path';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const config: CodegenConfig = {
-  schema: path.join(__dirname, '../../apps/backend/src/graphql/schema.graphql'),
+  schema: path.join(__dirname, '../../apps/backend/src/graphql/schemas/*.graphql'),
   documents: [
     path.join(__dirname, 'src/graphql', '**', '*.graphql'),
   ],

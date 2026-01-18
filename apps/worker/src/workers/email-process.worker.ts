@@ -1,7 +1,5 @@
-import { getGraphQLClient } from '../config/graphql';
+import * as restClient from '../config/rest-client';
 import { getEmailParserService } from '../services/email/parser.service';
-import * as queries from '../graphql/queries';
-import * as mutations from '../graphql/mutations';
 import { loggers } from '../lib/logger';
 
 const log = loggers.worker;
@@ -38,26 +36,16 @@ export async function processEmailJob(
   log.debug({ uid: message.uid, syncSourceId }, 'Processing email');
 
   try {
-    const client = getGraphQLClient();
-
     // Check if already successfully processed
-    const processedCheck = await client.request(queries.IS_EMAIL_PROCESSED, {
-      syncSourceId,
-      messageUid: message.uid,
-    });
+    const isProcessed = await restClient.isEmailProcessed(syncSourceId, message.uid);
 
-    if (processedCheck.processedEmail) {
+    if (isProcessed) {
       log.debug({ uid: message.uid }, 'Email already processed, skipping');
       return { success: true };
     }
 
     // Get sync source
-    const sourceData = await client.request(queries.GET_SYNC_SOURCE, {
-      id: syncSourceId,
-      userId,
-    });
-
-    const source = sourceData.workerSyncSource;
+    const source = await restClient.getSyncSource(syncSourceId, userId);
     if (!source) {
       throw new Error(`Sync source ${syncSourceId} not found`);
     }
@@ -93,48 +81,38 @@ export async function processEmailJob(
     // Handle unhandled email types by adding to DLQ
     if (parseResult.type === 'payment' || parseResult.type === 'unknown') {
       log.warn({ uid: message.uid, type: parseResult.type }, 'Unhandled email type, adding to DLQ');
-      await client.request(mutations.CREATE_DLQ_ENTRY, {
-        input: {
-          userId,
-          syncSourceId,
-          messageUid: message.uid,
-          subject: message.subject,
-          fromAddress: message.from,
-          date: message.date,
-          bodyText: message.bodyText,
-          bodyHtml: message.bodyHtml,
-          errorMessage: `Unhandled email type: ${parseResult.type}`,
-          errorType: 'UNSUPPORTED_TYPE',
-        },
+      await restClient.createDLQEntry({
+        userId,
+        syncSourceId,
+        messageUid: message.uid,
+        subject: message.subject,
+        fromAddress: message.from,
+        date: message.date,
+        bodyText: message.bodyText,
+        bodyHtml: message.bodyHtml,
+        errorMessage: `Unhandled email type: ${parseResult.type}`,
+        errorType: 'UNSUPPORTED_TYPE',
       });
       log.info({ uid: message.uid, type: parseResult.type }, 'DLQ entry created for unhandled type');
       return { success: true };
     }
 
     // Mark email as processed ONLY on success (for handled types)
-    const processedEmail = await client.request(mutations.MARK_EMAIL_PROCESSED, {
-      input: {
-        userId,
-        syncSourceId,
-        messageUid: message.uid,
-      },
-    });
+    const processedEmail = await restClient.markEmailProcessed(userId, syncSourceId, message.uid);
 
     if (parseResult.type === 'transaction') {
       const transaction = parseResult.data;
 
       // Create transaction record using the sync source's linked account
-      await client.request(mutations.CREATE_TRANSACTION, {
-        input: {
-          userId,
-          accountId: source.accountId,
-          syncSourceId: source.id,
-          processedEmailId: processedEmail.markEmailProcessed.id,
-          amount: transaction.amount,
-          transactionDate: transaction.date,
-          name: transaction.merchant || 'Unknown Merchant',
-          merchantName: transaction.merchant || null,
-        },
+      await restClient.createTransaction({
+        userId,
+        accountId: source.accountId,
+        syncSourceId: source.id,
+        processedEmailId: processedEmail.id,
+        amount: transaction.amount,
+        transactionDate: transaction.date,
+        name: transaction.merchant || 'Unknown Merchant',
+        merchantName: transaction.merchant || undefined,
       });
 
       log.info({ merchant: transaction.merchant, amount: Math.abs(transaction.amount).toFixed(2) }, 'Created transaction');
@@ -144,18 +122,16 @@ export async function processEmailJob(
       const creditUpdate = parseResult.data;
 
       // Create balance update record using the sync source's linked account
-      await client.request(mutations.CREATE_BALANCE_UPDATE, {
-        input: {
-          userId,
-          accountId: source.accountId,
-          syncSourceId: source.id,
-          processedEmailId: processedEmail.markEmailProcessed.id,
-          balanceType: 'available_balance',
-          newBalance: creditUpdate.availableCredit,
-          updateSource: 'email',
-          sourceDetail: source.name.toLowerCase(),
-          updateDate: message.date,
-        },
+      await restClient.createBalanceUpdate({
+        userId,
+        accountId: source.accountId,
+        syncSourceId: source.id,
+        processedEmailId: processedEmail.id,
+        balanceType: 'available_balance',
+        newBalance: creditUpdate.availableCredit,
+        updateSource: 'email',
+        sourceDetail: source.name.toLowerCase(),
+        updateDate: message.date,
       });
 
       log.info({ availableCredit: creditUpdate.availableCredit.toFixed(2) }, 'Updated credit');
@@ -175,7 +151,7 @@ export async function processEmailJob(
 }
 
 /**
- * Add failed email to DLQ via GraphQL
+ * Add failed email to DLQ via REST API
  */
 export async function addDLQEntry(
   jobData: EmailProcessJobData,
@@ -185,22 +161,18 @@ export async function addDLQEntry(
   const { syncSourceId, userId, message } = jobData;
 
   try {
-    const client = getGraphQLClient();
-
-    await client.request(mutations.CREATE_DLQ_ENTRY, {
-      input: {
-        userId,
-        syncSourceId,
-        messageUid: message.uid,
-        subject: message.subject,
-        fromAddress: message.from,
-        date: message.date,
-        bodyText: message.bodyText,
-        bodyHtml: message.bodyHtml,
-        errorMessage,
-        errorType: 'PARSE_ERROR',
-        errorStack,
-      },
+    await restClient.createDLQEntry({
+      userId,
+      syncSourceId,
+      messageUid: message.uid,
+      subject: message.subject,
+      fromAddress: message.from,
+      date: message.date,
+      bodyText: message.bodyText,
+      bodyHtml: message.bodyHtml,
+      errorMessage,
+      errorType: 'PARSE_ERROR',
+      errorStack,
     });
 
     log.info({ uid: message.uid }, 'DLQ entry created');

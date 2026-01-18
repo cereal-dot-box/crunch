@@ -10,16 +10,19 @@ import { fileURLToPath } from 'url';
 import { loadEnv, getEnv } from './config/env';
 import { connectDatabase, disconnectDatabase } from './lib/database';
 import { errorHandler } from './middleware/error.middleware';
-import { resolvers } from './graphql/resolvers';
+import { resolvers } from './graphql/resolvers/index.js';
 import { getEmailScheduler } from './services/email/scheduler.service';
 import { verifyServiceToken, extractToken } from './lib/jwks';
 import { loggers } from './lib/logger';
 import { registerMCPRoutes } from './mcp/index.js';
+import { syncSourcesRoutes } from './rest/sync-sources.js';
+import { workerRoutes } from './rest/worker.js';
 
 const log = loggers.server;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+const typeDefs = readFileSync(join(__dirname, 'graphql', 'schema.graphql'), 'utf8');
 
 async function start() {
   // Load and validate environment
@@ -69,10 +72,8 @@ async function start() {
   app.setErrorHandler(errorHandler);
 
   // Register GraphQL with Mercurius
-  const schemaPath = join(__dirname, 'graphql', 'schema.graphql');
-  const schema = readFileSync(schemaPath, 'utf8');
   await app.register(mercurius, {
-    schema,
+    schema: typeDefs,
     resolvers,
     context: async (request) => {
       // Extract and verify service JWT token
@@ -101,6 +102,10 @@ async function start() {
   // Register MCP routes
   await registerMCPRoutes(app);
 
+  // Register REST routes
+  await app.register(syncSourcesRoutes, { prefix: '/api/sync-sources' });
+  await app.register(workerRoutes, { prefix: '/api/worker' });
+
   // Custom logging for non-GraphQL requests
   app.addHook('onRequest', async (request, reply) => {
     if (request.url !== '/graphql') {
@@ -120,89 +125,6 @@ async function start() {
           statusCode: reply.statusCode,
         },
       }, 'request completed');
-    }
-  });
-
-  // REST endpoint for scheduler - active sync sources
-  // No auth required for internal use
-  app.get('/api/sync-sources/active', async (_request, reply) => {
-    try {
-      const { db } = await import('./lib/database');
-      const { loggers } = await import('./lib/logger');
-      const log = loggers.http;
-
-      const sources = await db
-        .selectFrom('SyncSource')
-        .innerJoin('Account', 'Account.id', 'SyncSource.account_id')
-        .select([
-          'SyncSource.id',
-          'SyncSource.name',
-          'SyncSource.bank',
-          'SyncSource.account_type as accountType',
-          'SyncSource.account_id as accountId',
-          'SyncSource.email_address as emailAddress',
-          'SyncSource.imap_host as imapHost',
-          'SyncSource.imap_port as imapPort',
-          'SyncSource.imap_password_encrypted as imapPasswordEncrypted',
-          'SyncSource.imap_folder as imapFolder',
-          'SyncSource.last_processed_uid as lastProcessedUid',
-          'Account.user_id as userId',
-        ])
-        .where('SyncSource.status', '=', 'active')
-        .where('SyncSource.is_active', '=', 1)
-        .where('Account.is_active', '=', 1)
-        .execute();
-
-      return reply.send({ sources });
-    } catch (error) {
-      log.error({ err: error }, 'Error fetching active sync sources');
-      return reply.code(500).send({ error: 'Internal server error' });
-    }
-  });
-
-  // REST endpoint for scheduler - single sync source (for manual sync)
-  app.get<{ Querystring: { userId: string } }>('/api/sync-sources/:id', async (request, reply) => {
-    try {
-      const { db } = await import('./lib/database');
-      const { loggers } = await import('./lib/logger');
-      const log = loggers.http;
-
-      const { userId } = request.query;
-      const id = parseInt(request.params.id, 10);
-
-      if (!userId) {
-        return reply.code(400).send({ error: 'userId query parameter is required' });
-      }
-
-      const source = await db
-        .selectFrom('SyncSource')
-        .innerJoin('Account', 'Account.id', 'SyncSource.account_id')
-        .select([
-          'SyncSource.id',
-          'SyncSource.name',
-          'SyncSource.bank',
-          'SyncSource.account_type as accountType',
-          'SyncSource.account_id as accountId',
-          'SyncSource.email_address as emailAddress',
-          'SyncSource.imap_host as imapHost',
-          'SyncSource.imap_port as imapPort',
-          'SyncSource.imap_password_encrypted as imapPasswordEncrypted',
-          'SyncSource.imap_folder as imapFolder',
-          'SyncSource.last_processed_uid as lastProcessedUid',
-          'Account.user_id as userId',
-        ])
-        .where('SyncSource.id', '=', id)
-        .where('Account.user_id', '=', userId)
-        .executeTakeFirst();
-
-      if (!source) {
-        return reply.code(404).send({ error: 'Sync source not found' });
-      }
-
-      return reply.send({ source });
-    } catch (error) {
-      log.error({ err: error }, 'Error fetching sync source');
-      return reply.code(500).send({ error: 'Internal server error' });
     }
   });
 
